@@ -1,0 +1,59 @@
+`timescale 1ns / 1ps
+
+
+module cpu_top(
+    //clocking
+    input aclk,
+    input aresetn,
+    //instruction port
+    output [31:0] addr_inst,
+    output [31:0] data_out_inst,
+    input [31:0] data_in_inst,
+    output en_inst,
+    output we_inst,
+    //data port
+    output [31:0] addr_data,
+    output [31:0] data_out_data,
+    input [31:0] data_in_data,
+    output en_data,
+    output we_data
+    );
+    
+    localparam c_register_file_len = 32;
+    //register file
+    bit [31:0] REG_FILE [c_register_file_len - 1 : 0];
+    
+    //program counter -> PC
+    bit [31:0] PC = 32'd0;
+    //instruction reg -> INST_REG
+    bit [31:0] INST_REG = 32'd0;
+    //state tracker
+    bit [31:0] T = 'd0; 
+    
+    //main state machine
+    always@(posedge aclk)begin
+           if(aresetn)begin //work
+                T <= T + 1;
+               case(T)
+                    32'd0 : begin //INSTR fetch
+                        INST_REG <= data_in_inst;
+                        T <= T + 1;
+                        PC <= PC + 1;                          
+                    end
+               endcase
+               
+               case(INST_REG) //change to opcode when inst decode is completed
+                    
+               endcase
+           end
+           else begin       //reset
+                PC <= 32'd0;
+                T <= 32'd0;
+           end
+    end
+    
+    
+    //net assigments
+    assign addr_inst = PC;
+    
+endmodule
