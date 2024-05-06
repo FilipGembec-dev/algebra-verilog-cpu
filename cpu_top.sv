@@ -9,8 +9,8 @@ module cpu_top(
     input [31:0] addr_inst,
     output [31:0] data_out_inst,
     input [31:0] data_in_inst,
-    input [3:0] en_inst,
-    input we_inst,
+    input en_inst,
+    input [3:0] we_inst,
     //data port
     input [31:0] addr_data,
     output [31:0] data_out_data,
