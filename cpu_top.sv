@@ -6,18 +6,20 @@ module cpu_top(
     input aclk,
     input aresetn,
     //instruction port
-    output [31:0] addr_inst,
+    input [31:0] addr_inst,
     output [31:0] data_out_inst,
     input [31:0] data_in_inst,
-    output en_inst,
-    output we_inst,
+    input [3:0] en_inst,
+    input we_inst,
     //data port
-    output [31:0] addr_data,
+    input [31:0] addr_data,
     output [31:0] data_out_data,
     input [31:0] data_in_data,
-    output en_data,
-    output we_data
+    input en_data,
+    input [3:0] we_data
     );
+    
+    
     
     localparam c_register_file_len = 32;
     //register file
@@ -28,7 +30,13 @@ module cpu_top(
     //instruction reg -> INST_REG
     bit [31:0] INST_REG = 32'd0;
     //state tracker
-    bit [31:0] T = 'd0; 
+    bit [31:0] T = 'd0;
+//next pc 
+//    bit [31:0] next_PC; 
+
+    //PC + 4
+    wire [31:0] PC_plus_4 = PC + 4;
+    
     
     //main state machine
     always@(posedge aclk)begin
@@ -38,7 +46,8 @@ module cpu_top(
                     32'd0 : begin //INSTR fetch
                         INST_REG <= data_in_inst;
                         T <= T + 1;
-                        PC <= PC + 1;                          
+//                        PC <= next_PC;
+                        PC <= PC_plus_4;                          
                     end
                endcase
                
@@ -54,6 +63,6 @@ module cpu_top(
     
     
     //net assigments
-    assign addr_inst = PC;
+    assign addr_inst = PC[31:3]; //use word adress to read memory
     
 endmodule
