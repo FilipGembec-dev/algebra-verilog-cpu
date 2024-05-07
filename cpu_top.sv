@@ -72,8 +72,8 @@ module cpu_top(
     wire xori = imm_alu_op & (funct3 == 3'h4); // xor immediate
     wire lui = (opcode == 7'b0110111); // load upper immediate
     wire auipc = (opcode == 7'b0010111); // // add upper immediate to PC
-    wire slli = imm_alu_op & (funct3 == 3'h1) & (imm[11:5] == 7'h00); //shift left logical immediate
-    wire srli = imm_alu_op & (funct3 == 3'h5) & (imm[11:5] == 7'h00); //shift right logical immediate
+    wire slli = imm_alu_op & (funct3 == 3'h1) & (imm_I[11:5] == 7'h00); //shift left logical immediate
+    wire srli = imm_alu_op & (funct3 == 3'h5) & (imm_I[11:5] == 7'h00); //shift right logical immediate
     //register to register alu ops
     wire add = reg_alu_op & (funct3 == 3'h0) & (funct7 == 7'h00); //add rs1 and rs2
     wire sub = reg_alu_op & (funct3 == 3'h0) & (funct7 == 7'h20); //sub rs1 and rs2
@@ -124,39 +124,38 @@ module cpu_top(
 					//immediate integer operations				
 					addi: REG_FILE[rd] <= a + imm_I; 
 					slti: REG_FILE[rd] <= a < imm_I;
-					andi:
-					ori:
-					xori:
-					lui:
-					auipc:
+					andi: ;
+					ori: ;
+					xori: ;
+					lui: ;
+					auipc: ;
 					//Register-Register operations
 					add: REG_FILE[rd] <= a + b;
-					sub:
-					_xor:
-					_or:
-					_and:
-					srl:
-					sll:
-					slt:
+					sub: ;
+					_xor: ;
+					_or: ;
+					_and: ;
+					srl: ;
+					sll: ;
+					slt: ;
 					// Conditional jumps
-					beq: 
-					ben:
-					blt:
-					bge:
-					bltu:
-					bgeu:
+					beq: ;
+					ben: ;
+					blt: ;
+					bge: ;
+					bltu: ;
+					bgeu: ;
 					// Unconditional jumps
-					jal:
-					jalr:
+					jal: ;
+					jalr: ;
 					//store
-					sb:
-					sh:
-					sw:
+					sb: ;
+					sh: ;
+					sw: ;
 					//Load
-					lb:
-					lh:
-					lw:
-					end
+					lb: ;
+					lh: ;
+					lw: ;
                endcase
            end
            else begin       //reset
