@@ -1,22 +1,19 @@
-`timescale 1ns / 1ps
-
-
 module cpu_top(
     //clocking
     input aclk,
     input aresetn,
     //instruction port
-    input [31:0] addr_inst,
+    output [31:0] addr_inst,
     output [31:0] data_out_inst,
     input [31:0] data_in_inst,
-    input en_inst,
-    input [3:0] we_inst,
+    output  en_inst,
+    output [3:0] we_inst,
     //data port
-    input [31:0] addr_data,
+    output [31:0] addr_data,
     output [31:0] data_out_data,
     input [31:0] data_in_data,
-    input en_data,
-    input [3:0] we_data
+    output en_data,
+    output [3:0] we_data
     );
     
     
@@ -36,6 +33,9 @@ module cpu_top(
 
     //PC + 4
     wire [31:0] PC_plus_4 = PC + 4;
+    
+    //decoder
+    
     
     
     //main state machine
