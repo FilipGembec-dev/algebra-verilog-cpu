@@ -17,9 +17,7 @@ module cpu_top(
     output en_data,
     output [3:0] we_data
     );
-    
-    
-    
+	
     localparam c_register_file_len = 5; // rv32i has 31 general-purpose registers x1-x31, which hold integer values
     //register file
     bit [31:0] REG_FILE [c_register_file_len - 1 : 0];
@@ -29,8 +27,8 @@ module cpu_top(
     bit [31:0] INST_REG = 32'd0;
     //state tracker
     bit [31:0] T = 'd0;
-//next pc 
-//    bit [31:0] next_PC; 
+    //next pc 
+    //bit [31:0] next_PC; 
 
     //PC + 4
     wire [31:0] PC_plus_4 = PC + 4;
@@ -74,6 +72,7 @@ module cpu_top(
     wire auipc = (opcode == 7'b0010111); // // add upper immediate to PC
     wire slli = imm_alu_op & (funct3 == 3'h1) & (imm_I[11:5] == 7'h00); //shift left logical immediate
     wire srli = imm_alu_op & (funct3 == 3'h5) & (imm_I[11:5] == 7'h00); //shift right logical immediate
+    wire srai = imm_alu_op & (funct3 == 3'h5) & (imm_I[11:5] == 7'h20); //shift right arithmetic immediate
     //register to register alu ops
     wire add = reg_alu_op & (funct3 == 3'h0) & (funct7 == 7'h00); //add rs1 and rs2
     wire sub = reg_alu_op & (funct3 == 3'h0) & (funct7 == 7'h20); //sub rs1 and rs2
@@ -96,16 +95,17 @@ module cpu_top(
     wire jal = (opcode == 7'b1101111);
     wire jalr = (opcode == 7'b1100111) & (funct3 == 3'h7);
     //branch
-	wire beq = branch_op & (funct3 == 3'h0); //branch if equale
-	wire ben = branch_op & (funct3 == 3'h1); //branch if not equale
-	wire blt = branch_op & (funct3 == 3'h4); //branch if less then zero
-	wire bge = branch_op & (funct3 == 3'h5); //branch greater or equale
-	wire bltu = branch_op & (funct3 == 3'h6); //brench if less then *unsigned
-	wire bgeu = branch_op & (funct3 == 3'h7); //branch if greater or equale then *unsigned 
+    wire beq = branch_op & (funct3 == 3'h0); //branch if equale
+    wire ben = branch_op & (funct3 == 3'h1); //branch if not equale
+    wire blt = branch_op & (funct3 == 3'h4); //branch if less then zero
+    wire bge = branch_op & (funct3 == 3'h5); //branch greater or equale
+    wire bltu = branch_op & (funct3 == 3'h6); //brench if less then *unsigned
+    wire bgeu = branch_op & (funct3 == 3'h7); //branch if greater or equale then *unsigned 
+    //TO DO: FENCE, FENCE.1, ECALL, EBREAK
 	
-	//setting registers for ALU operations
-	wire [31:0] a = (rs1==0) ? 0 : REG_FILE[rs1];
-	wire [31:0] b = (rs2==0) ? 0 : REG_FILE[rs2];	
+    //setting registers for ALU operations
+    wire [31:0] a = (rs1==0) ? 0 : REG_FILE[rs1];
+    wire [31:0] b = (rs2==0) ? 0 : REG_FILE[rs2];	
 	
     //main state machine
     always@(posedge aclk)begin
@@ -122,8 +122,10 @@ module cpu_top(
                
                case(1'b1) //change to opcode when inst decode is completed
 					//immediate integer operations				
-					addi: REG_FILE[rd] <= a + imm_I; 
-					slti: REG_FILE[rd] <= a < imm_I;
+					addi: REG_FILE[rd] <= a + imm_I; //TO DO: do we get a signed integer?
+					slti: REG_FILE[rd] <= a < imm_I; //-II-
+					srli: ;
+					srai: ;
 					andi: ;
 					ori: ;
 					xori: ;
