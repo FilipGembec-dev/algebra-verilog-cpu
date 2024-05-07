@@ -1,6 +1,5 @@
 `timescale 1ns / 1ps
 
-
 module cpu_top(
     //clocking
     input aclk,
@@ -21,10 +20,9 @@ module cpu_top(
     
     
     
-    localparam c_register_file_len = 32; // rv32i has 31 general-purpose registers x1-x31, which hold integer values
+    localparam c_register_file_len = 5; // rv32i has 31 general-purpose registers x1-x31, which hold integer values
     //register file
     bit [31:0] REG_FILE [c_register_file_len - 1 : 0];
-    assign REG_FILE[31] = 32'h00; //register x0 is hardwired to the constant 0
     //program counter -> PC
     bit [31:0] PC = 32'd0;
     //instruction reg -> INST_REG
@@ -45,11 +43,11 @@ module cpu_top(
     wire [4:0] rs2 = data_in_inst [24:20];
     wire [6:0] funct7 = data_in_inst [31:25];
     //immediate decoder
-    wire [11:0] imm = data_in_inst [31:20];
-    wire [6:0] imm_S = {data_in_inst[31:25], data_in_inst[11:7]};
-    wire [6:0] imm_B = {data_in_inst[31], data_in_inst[7], data_in_inst[30:25], data_in_inst[11:8]};
-    wire [19:0] imm_U = data_in_inst [31:12];
-    wire [19:0] imm_J = {data_in_inst [31], data_in_inst[19:12], data_in_inst[20], data_in_inst[30:25], data_in_inst[24:21]};
+    wire signed [11:0] imm_I = data_in_inst [31:20];
+    wire signed [6:0] imm_S = {data_in_inst[31:25], data_in_inst[11:7]};
+    wire signed [6:0] imm_B = {data_in_inst[31], data_in_inst[7], data_in_inst[30:25], data_in_inst[11:8]};
+    wire signed [19:0] imm_U = data_in_inst [31:12];
+    wire signed [19:0] imm_J = {data_in_inst [31], data_in_inst[19:12], data_in_inst[20], data_in_inst[30:25], data_in_inst[24:21]};
  
  //instruction format decode
     //Integer Register-Immediate Instructions (I-type operations)
@@ -57,11 +55,8 @@ module cpu_top(
     //Integer Register-Register Operations
     wire reg_alu_op = (opcode == 7'b0110011); 
     //NOP 
-    //??
-    //Control Transfer instructions 
-    //Unconditional jumps
-    wire jal = (opcode == 7'b1101111);
-    wire jalr = (opcode == 7'b1100111) & (funct3 == 3'h7);
+    //?? 
+	
     //Conditional branches
     wire branch_op = (opcode == 7'b1100011);
     //Load and store instructions
@@ -96,9 +91,22 @@ module cpu_top(
     wire sb = store_op & (funct3 == 3'h0); //store byte
     wire sh = store_op & (funct3 == 3'h1); //store half word
     wire sw = store_op & (funct3 == 3'h2); //store word
-    
-    
-    
+    //control
+	//Unconditional jumps
+    wire jal = (opcode == 7'b1101111);
+    wire jalr = (opcode == 7'b1100111) & (funct3 == 3'h7);
+    //branch
+	wire beq = branch_op & (funct3 == 3'h0); //branch if equale
+	wire ben = branch_op & (funct3 == 3'h1); //branch if not equale
+	wire blt = branch_op & (funct3 == 3'h4); //branch if less then zero
+	wire bge = branch_op & (funct3 == 3'h5); //branch greater or equale
+	wire bltu = branch_op & (funct3 == 3'h6); //brench if less then *unsigned
+	wire bgeu = branch_op & (funct3 == 3'h7); //branch if greater or equale then *unsigned 
+	
+	//setting registers for ALU operations
+	wire [31:0] a = (rs1==0) ? 0 : REG_FILE[rs1];
+	wire [31:0] b = (rs2==0) ? 0 : REG_FILE[rs2];	
+	
     //main state machine
     always@(posedge aclk)begin
            if(aresetn)begin //work
@@ -113,7 +121,42 @@ module cpu_top(
                endcase
                
                case(1'b1) //change to opcode when inst decode is completed
-                    
+					//immediate integer operations				
+					addi: REG_FILE[rd] <= a + imm_I; 
+					slti: REG_FILE[rd] <= a < imm_I;
+					andi:
+					ori:
+					xori:
+					lui:
+					auipc:
+					//Register-Register operations
+					add: REG_FILE[rd] <= a + b;
+					sub:
+					_xor:
+					_or:
+					_and:
+					srl:
+					sll:
+					slt:
+					// Conditional jumps
+					beq: 
+					ben:
+					blt:
+					bge:
+					bltu:
+					bgeu:
+					// Unconditional jumps
+					jal:
+					jalr:
+					//store
+					sb:
+					sh:
+					sw:
+					//Load
+					lb:
+					lh:
+					lw:
+					end
                endcase
            end
            else begin       //reset
@@ -122,8 +165,8 @@ module cpu_top(
            end
     end
     
-    
     //net assigments
     assign addr_inst = PC[31:3]; //use word adress to read memory
-    
+	assign REG_FILE[31] = 32'h00; //register x0 is hardwired to the constant 0
+	
 endmodule
