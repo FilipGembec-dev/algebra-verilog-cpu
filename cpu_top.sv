@@ -9,13 +9,13 @@ module cpu_top(
     output [31:0] data_out_inst,
     input [31:0] data_in_inst,
     output  en_inst,
-    output reg [3:0] we_inst,
+    output [3:0] we_inst,
     //data port
-    output reg [31:0] addr_data,
+    output [31:0] addr_data,
     output [31:0] data_out_data,
     input [31:0] data_in_data,
     output en_data,
-    output reg [3:0] we_data
+    output [3:0] we_data
     );
     
     
@@ -105,14 +105,18 @@ module cpu_top(
 	wire bgeu = branch_op & (funct3 == 3'h7); //branch if greater or equale then *unsigned 
 	//TO DO: FENCE, FENCE.1, ECALL, EBREAK
 	
-	//setting registers for ALU operations
+	//setting two regfile outputs
+	wire [31:0] qa <= (rs1==0) ? 0 : REG_FILE[rs1];
+    wire [31:0] qb <= (rs2==0) ? 0 : REG_FILE[rs2];
 	
+	//set operation registers
 	reg [31:0] a;
 	reg [31:0] b;
 	reg [31:0] c;
 	
-	wire address = (load_op | store_op) ? 0 : rs1 + {20{imm_I[31], imm_I}};
- 
+	//load store wires
+	wire [31:0] address  = 32'b0;
+	wire [3:0] write_enable = 4'b0000;
 	
     //main state machine
     always@(posedge aclk)begin
@@ -127,20 +131,27 @@ module cpu_top(
                     end
                     32'd1 : begin //INSTR decode
                         if(imm_alu_op | reg_alu_op | branch_op )begin //in case of ALU and branch instructions
-                            a <= (rs1==0) ? 0 : REG_FILE[rs1];
-                            b <= (rs2==0) ? 0 : REG_FILE[rs2];
+                            a <= qa
+                            b <= qb
                             c <= $signed({20{imm_B[31], imm_B}});
                             T <= T + 1;
                         end else begin
                             case (1'b1)
                                 jal:begin
+									if(rd == 1'b0)begin //pseudo-instruction jump 1 cycle
                                         PC <= PC + $signed({12{imm_J[31], imm_J}});
                                         T <= 0;
-                                    end
+									end	else begin //JAL part
+										c <= PC_plus_4;
+										PC <= PC + $signed({12{imm_J[31], imm_J}});
+										T <= T + 2;
+									end
+										
+                                end
                                 jalr:begin
-                                        PC <= REG_FILE[rd];
-                                        PC <= PC + $signed({12{imm_J[31], imm_J}});
-                                        T <= 0;
+                                        c <= PC_plus_4;
+                                        PC <= qa + {20{imm_I[31], imm_I}};
+                                        T <= T + 2;
                                     end
                                 auipc: ;
                             endcase
@@ -169,25 +180,19 @@ module cpu_top(
                             srl: ;
                             sll: ;
                             slt: ;
+							//store instruction adress calculation 
+							(sb | sw | sh):	address <= a + {20{imm_I[31], imm_I}};
                             //load-store
                             (load_op | store_op): T <= T + 1; //jump to mem cycle
+							jalr:begin PC[0] <= 0; T <= T + 2;  end 
                         endcase
                     end
                     32'd3: begin //memory access state
                         T <= 0;
                         case (1'b1)
-                            sb:begin
-                                addr_data = address;
-                                we_data <= 4'b0001;
-                            end    
-                            sh: begin
-                                addr_data = address;
-                                we_data <= 4'b0011;
-                            end
-                            sw: begin
-                                addr_data = address;
-                                we_data <= 4'b1111;
-                            end
+                            sb: write_enable <= 4'b0001;                                
+                            sh: write_enable <= 4'b0011;
+                            sw: write_enable <= 4'b1111;
                             //Load
                             lb: REG_FILE[rd] <= {{24{data_in_data[31]}},data_in_data[31:24]};
                             lh: REG_FILE[rd] <= {{16{data_in_data[31]}},data_in_data[31:16]};
@@ -210,6 +215,8 @@ module cpu_top(
     //net assigments
     assign addr_inst = PC[31:3]; //use word adress to read memory
 	assign REG_FILE[31] = 32'h00; //register x0 is hardwired to the constant
+	assign we_data = write_enable;
+	assign addr_data = adress;
 
 	
 endmodule
