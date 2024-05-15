@@ -9,13 +9,13 @@ module cpu_top(
     output [31:0] data_out_inst,
     input [31:0] data_in_inst,
     output  en_inst,
-    output [3:0] we_inst,
+    output reg [3:0] we_inst,
     //data port
-    output [31:0] addr_data,
+    output reg [31:0] addr_data,
     output [31:0] data_out_data,
     input [31:0] data_in_data,
     output en_data,
-    output [3:0] we_data
+    output reg [3:0] we_data
     );
     
     
@@ -43,11 +43,11 @@ module cpu_top(
     wire [4:0] rs2 = data_in_inst [24:20];
     wire [6:0] funct7 = data_in_inst [31:25];
     //immediate decoder
-    wire signed [11:0] imm_I = data_in_inst [31:20];
-    wire signed [6:0] imm_S = {data_in_inst[31:25], data_in_inst[11:7]};
-    wire signed [6:0] imm_B = {data_in_inst[31], data_in_inst[7], data_in_inst[30:25], data_in_inst[11:8]};
-    wire signed [19:0] imm_U = data_in_inst [31:12];
-    wire signed [19:0] imm_J = {data_in_inst [31], data_in_inst[19:12], data_in_inst[20], data_in_inst[30:25], data_in_inst[24:21]};
+    wire [11:0] imm_I = data_in_inst[31:20];
+    wire [6:0] imm_S = {data_in_inst[31:25], data_in_inst[11:7]};
+    wire [6:0] imm_B = {data_in_inst[31], data_in_inst[7], data_in_inst[30:25], data_in_inst[11:8]};
+    wire [19:0] imm_U = data_in_inst [31:12];
+    wire [19:0] imm_J = {data_in_inst [31], data_in_inst[19:12], data_in_inst[20], data_in_inst[30:25], data_in_inst[24:21]};
  
  //instruction format decode
     //Integer Register-Immediate Instructions (I-type operations)
@@ -106,8 +106,13 @@ module cpu_top(
 	//TO DO: FENCE, FENCE.1, ECALL, EBREAK
 	
 	//setting registers for ALU operations
-	wire [31:0] a = (rs1==0) ? 0 : REG_FILE[rs1];
-	wire [31:0] b = (rs2==0) ? 0 : REG_FILE[rs2];	
+	
+	reg [31:0] a;
+	reg [31:0] b;
+	reg [31:0] c;
+	
+	wire address = (load_op | store_op) ? 0 : rs1 + {20{imm_I[31], imm_I}};
+ 
 	
     //main state machine
     always@(posedge aclk)begin
@@ -120,47 +125,81 @@ module cpu_top(
 //                        PC <= next_PC;
                         PC <= PC_plus_4;                          
                     end
+                    32'd1 : begin //INSTR decode
+                        if(imm_alu_op | reg_alu_op | branch_op )begin //in case of ALU and branch instructions
+                            a <= (rs1==0) ? 0 : REG_FILE[rs1];
+                            b <= (rs2==0) ? 0 : REG_FILE[rs2];
+                            c <= $signed({20{imm_B[31], imm_B}});
+                            T <= T + 1;
+                        end else begin
+                            case (1'b1)
+                                jal:begin
+                                        PC <= PC + $signed({12{imm_J[31], imm_J}});
+                                        T <= 0;
+                                    end
+                                jalr:begin
+                                        PC <= REG_FILE[rd];
+                                        PC <= PC + $signed({12{imm_J[31], imm_J}});
+                                        T <= 0;
+                                    end
+                                auipc: ;
+                            endcase
+                        end
+                           
+                    end
+                    32'd2: begin // INSTR exe
+                        case(1'b1) //change to opcode when inst decode is completed
+                            //immediate integer operations
+                            (imm_alu_op | reg_alu_op): T <= T + 2;				
+                            addi: c <= a + {{20{imm_I[31]}}, imm_I}; //arithmetic ops are just signe-extended to 32 bits
+                            slti: c <= $signed(a) < $signed({20{imm_I[31], imm_I}}); //logic operations need $signed function
+                            srli: ;
+                            srai: ;
+                            andi: ;
+                            ori: ;
+                            xori: ; //note, XORI rd, rs1, -1 performs a bitwise logical inversion of register rs1 (assembler pseudo-instruction NOT rd, rs) 
+                            lui: ;
+                            auipc: ;
+                            //Register-Register operations
+                            add: c <= a + b;
+                            sub: ;
+                            _xor: ;
+                            _or: ;
+                            _and: ;
+                            srl: ;
+                            sll: ;
+                            slt: ;
+                            //load-store
+                            (load_op | store_op): T <= T + 1; //jump to mem cycle
+                        endcase
+                    end
+                    32'd3: begin //memory access state
+                        T <= 0;
+                        case (1'b1)
+                            sb:begin
+                                addr_data = address;
+                                we_data <= 4'b0001;
+                            end    
+                            sh: begin
+                                addr_data = address;
+                                we_data <= 4'b0011;
+                            end
+                            sw: begin
+                                addr_data = address;
+                                we_data <= 4'b1111;
+                            end
+                            //Load
+                            lb: REG_FILE[rd] <= {{24{data_in_data[31]}},data_in_data[31:24]};
+                            lh: REG_FILE[rd] <= {{16{data_in_data[31]}},data_in_data[31:16]};
+                            lw: REG_FILE[rd] <= data_in_data;
+                         endcase        
+                    end
+                    32'd4: begin // write back state
+                        REG_FILE[rd] = c;
+                        T <= 0;
+                    end
                endcase
                
-               case(1'b1) //change to opcode when inst decode is completed
-					//immediate integer operations				
-					addi: REG_FILE[rd] <= a + imm_I; //TO DO: do we get a signed integer?
-					slti: REG_FILE[rd] <= a < imm_I; //-II-
-					srli: ;
-					srai: ;
-					andi: ;
-					ori: ;
-					xori: ;
-					lui: ;
-					auipc: ;
-					//Register-Register operations
-					add: REG_FILE[rd] <= a + b;
-					sub: ;
-					_xor: ;
-					_or: ;
-					_and: ;
-					srl: ;
-					sll: ;
-					slt: ;
-					// Conditional jumps
-					beq: ;
-					ben: ;
-					blt: ;
-					bge: ;
-					bltu: ;
-					bgeu: ;
-					// Unconditional jumps
-					jal: ;
-					jalr: ;
-					//store
-					sb: ;
-					sh: ;
-					sw: ;
-					//Load
-					lb: ;
-					lh: ;
-					lw: ;
-               endcase
            end
            else begin       //reset
                 PC <= 32'd0;
@@ -170,6 +209,7 @@ module cpu_top(
     
     //net assigments
     assign addr_inst = PC[31:3]; //use word adress to read memory
-	assign REG_FILE[31] = 32'h00; //register x0 is hardwired to the constant 0
+	assign REG_FILE[31] = 32'h00; //register x0 is hardwired to the constant
+
 	
 endmodule
