@@ -16,7 +16,9 @@ module cpu_top(
     output [31:0] data_out_data,
     input [31:0] data_in_data,
     output en_data,
-    output [3:0] we_data 
+    output [3:0] we_data
+    //decode instruction module
+    
     );
     
     
