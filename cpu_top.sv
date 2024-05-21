@@ -191,10 +191,10 @@ module cpu_top(
                             case (operation)
                                 JAL:begin
 									if(dest_rn == 1'b0)begin //pseudo-instruction jump 1 cycle
-									   next_PC <= ALU_out;  //this is actually comb
+									   PC <= ALU_out;  //this is actually comb
                                        T <= FETCH;                             
 								    end	else begin //JAL part
-								       next_PC <= ALU_out; //this is actually comb
+								       PC <= ALU_out; //this is actually comb
 									   T <= EXECUTE;
 								    end	
                                 end
