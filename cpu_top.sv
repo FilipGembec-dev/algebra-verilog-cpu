@@ -1,6 +1,5 @@
 `timescale 1ns / 1ps
 
-
 module cpu_top(
     //clocking
     input aclk,
@@ -70,18 +69,19 @@ module cpu_top(
 	bit [4:0] dest_rn = rd; //TODO: redundant 
 	logic [31:0] a; //adder port A TODO: rename to alu_B
 	logic [31:0] b;  //adder port B TODO: rename to alu_B
-	logic [31:0] ALU_out; //adder out port     
-	//muxes and alu combo
+	logic [31:0] ALU_out; //adder out port    
+	logic [3:0] alu_op;
+	alu alu_inst_0(.a_i(a), .b_i(b), .c_o(ALU_out), .alu_op(alu_op));
+	//to do: implement all mathematical operations vi alu
+	
+	
 	    
-	      
-	      
-	      
 	  
 	 //assign enum to state tracker 
      e_states T;
      e_operations operation;
     //combinational part - muxes (no registers or elements with clock)        
-    always@(T, operation)begin
+    always_comb begin
     //set defult states for no latches
         next_PC <= ALU_out;
         a <= PC;
@@ -93,7 +93,7 @@ module cpu_top(
 	           next_PC <= ALU_out;
                a <= PC;
                b <= 31'd4;
-               ALU_out <= a + b; //set all for PC = PC + 4    
+               alu_op <= ADD; //set all for PC = PC + 4    
 	       end
 	       DECODE:begin
 	           if(jump_ops)begin //in case of ALU and branch instructions
@@ -102,16 +102,16 @@ module cpu_top(
 									if(dest_rn == 1'b0)begin //pseudo-instruction jump 1 cycle
                                         a <= PC;
                                         b <=  sig_imm_J;
-								        ALU_out <= a + b; // set all for PC = PC + imm_J (sequential part goes to fetch) 
+								        alu_op <= ADD; // set all for PC = PC + imm_J (sequential part goes to fetch) 
 								    end	else begin //JAL part
 								        b <=  sig_imm_J;
 								        a <= current_PC; //TODO:check might be wrong
-										ALU_out <= a + b; //set all for PC = PC + imm_J  (sequential part goes to execute)
+										alu_op <= ADD; //set all for PC = PC + imm_J  (sequential part goes to execute)
 								    end	
                                 end
                                 JALR:begin
                                     //TODO: This is incomplete
-                                    ALU_out <= a + b;
+                                    alu_op <= ADD;
                                 end
                                 AUIPC: begin 
                                     //PC <= PC + {imm_U,{12'b0}}; //U-immediate in register rd (lowest 12 bits are zeroes) TODO: check!
@@ -130,12 +130,12 @@ module cpu_top(
                             ADDI: begin
                                 a <= qa;
                                 b <= sig_imm_I;
-                                ALU_out <= a + b; //set for c = qa + imm_I (c is register that is rewired in sequential part)
+                                alu_op <= ADD; //set for c = qa + imm_I (c is register that is rewired in sequential part)
                             end
-                            SLTI: begin //writes 1 or 0 to reg[rd] depending on a<b 
+                            SLTI: begin //writes 1 or 0 to reg[rd] depending on a<b //to do for marin
                                 a <= qa;
                                 b <= sig_imm_I;
-                                ALU_out <= $signed(a) < $signed(b); //set c = qa < imm_I (logic operations need $signed function)
+                                //ALU_out <= $signed(a) < $signed(b); //set c = qa < imm_I (logic operations need $signed function)  <<<< marin rjesi sta si tu htjeo
                             end
                             SRLI: ;
                             SRAI: ;
@@ -150,7 +150,7 @@ module cpu_top(
                             ADD: begin
                                 a <= qa;
                                 b <= qb;
-                                ALU_out <= a + b; //set registers for c = a + b (c is register that is rewired in sequential part)
+                                alu_op <= ADD; //set registers for c = a + b (c is register that is rewired in sequential part)
                             end            
                             SUB: ;
                             _XOR: ;
@@ -163,7 +163,7 @@ module cpu_top(
 							(SB | SW | SH):begin
 							     a <= qa;
 							     b <= sig_imm_I; 
-							     ALU_out <= a + b;
+							     alu_op <= ADD;
 							 end    
 							JALR: begin // TODO
 						    end 
