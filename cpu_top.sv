@@ -36,6 +36,9 @@ module cpu_top(
     wire[19:0] imm_U, imm_J;
     wire [4:0] rd, rs1, rs2;
     wire jump_ops;
+    wire [3:0] funct3;
+    wire funct7;
+    
     
     //signextended in multiples of two(first two LSB killed)
     wire[31:0] sig_imm_I = { { 21{imm_I[11]} }, imm_I [11:1]};  
@@ -70,8 +73,7 @@ module cpu_top(
 	logic [31:0] a; //adder port A TODO: rename to alu_B
 	logic [31:0] b;  //adder port B TODO: rename to alu_B
 	logic [31:0] ALU_out; //adder out port    
-	logic [3:0] alu_op;
-	alu alu_inst_0(.a_i(a), .b_i(b), .c_o(ALU_out), .alu_op(alu_op));
+	
 	//to do: implement all mathematical operations vi alu
 	
 	
@@ -86,14 +88,12 @@ module cpu_top(
         next_PC <= ALU_out;
         a <= PC;
         b <= 31'd4;
-        ALU_out <= a + b;
     //work part     
 	   case(T)
 	       FETCH:begin
 	           next_PC <= ALU_out;
                a <= PC;
-               b <= 31'd4;
-               alu_op <= ADD; //set all for PC = PC + 4    
+               b <= 31'd4; 
 	       end
 	       DECODE:begin
 	           if(jump_ops)begin //in case of ALU and branch instructions
@@ -102,16 +102,13 @@ module cpu_top(
 									if(dest_rn == 1'b0)begin //pseudo-instruction jump 1 cycle
                                         a <= PC;
                                         b <=  sig_imm_J;
-								        alu_op <= ADD; // set all for PC = PC + imm_J (sequential part goes to fetch) 
 								    end	else begin //JAL part
 								        b <=  sig_imm_J;
 								        a <= current_PC; //TODO:check might be wrong
-										alu_op <= ADD; //set all for PC = PC + imm_J  (sequential part goes to execute)
 								    end	
                                 end
                                 JALR:begin
                                     //TODO: This is incomplete
-                                    alu_op <= ADD;
                                 end
                                 AUIPC: begin 
                                     //PC <= PC + {imm_U,{12'b0}}; //U-immediate in register rd (lowest 12 bits are zeroes) TODO: check!
@@ -130,7 +127,6 @@ module cpu_top(
                             ADDI: begin
                                 a <= qa;
                                 b <= sig_imm_I;
-                                alu_op <= ADD; //set for c = qa + imm_I (c is register that is rewired in sequential part)
                             end
                             SLTI: begin //writes 1 or 0 to reg[rd] depending on a<b //to do for marin
                                 a <= qa;
@@ -150,7 +146,6 @@ module cpu_top(
                             ADD: begin
                                 a <= qa;
                                 b <= qb;
-                                alu_op <= ADD; //set registers for c = a + b (c is register that is rewired in sequential part)
                             end            
                             SUB: ;
                             _XOR: ;
@@ -163,7 +158,6 @@ module cpu_top(
 							(SB | SW | SH):begin
 							     a <= qa;
 							     b <= sig_imm_I; 
-							     alu_op <= ADD;
 							 end    
 							JALR: begin // TODO
 						    end 
@@ -291,6 +285,7 @@ module cpu_top(
 	assign REG_FILE[0] = 32'h00; //register x0 is hardwired to the constant
 	assign we_data = _we_data;
 	assign addr_data = _addr_data;
+	wire pc_add = (T == FETCH) ? 1'b1 : 1'b0;
 	
 	//instantiations
 	 inst_decode my_inst( .data_in_inst,
@@ -299,9 +294,11 @@ module cpu_top(
      .imm_S , .imm_B ,
      .imm_U , .imm_J,
      .rd, .rs1, .rs2,
-     .jump_ops
+     .jump_ops,
+     .funct3, .funct7
      );
-
+    
+    alu alu_inst_0(.a_i(a), .b_i(b), .c_o(ALU_out), .funct3_i(funct3), .funct7_i(funct7), .pc_add(pc_add));
 
 	
 endmodule

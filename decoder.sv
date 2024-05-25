@@ -7,7 +7,9 @@ module inst_decode(
     output[6:0] imm_S, imm_B,
     output[19:0] imm_U, imm_J,
     output [4:0] rd, rs1, rs2,
-    output jump_ops
+    output jump_ops,
+    output [3:0] funct3,
+    output funct7
     );
     typedef enum bit [31:0] {ADDI = 32'h1, SLTI = 32'h2, ANDI = 32'h4, ORI = 32'h8, XORI = 32'h10, LUI = 32'h20, AUIPC = 32'h40, SLLI = 32'h80, SRLI = 32'h100,
                              SRAI = 32'h200, ADD = 32'h400, SUB = 32'h800,_XOR = 32'h1000, _OR = 32'h2000, _AND = 32'h4000, SLL = 32'h8000, SRL = 32'h10000,
@@ -19,10 +21,10 @@ module inst_decode(
     //R-type instruction parts decoder
     wire [6:0] opcode = data_in_inst [6:0];
     wire [4:0] _rd = data_in_inst [11:7];
-    wire [2:0] funct3 = data_in_inst [14:12];
+    wire [2:0] _funct3 = data_in_inst [14:12];
     wire [4:0] _rs1 = data_in_inst [19:15];
     wire [4:0] _rs2 = data_in_inst [24:20];
-    wire [6:0] funct7 = data_in_inst [31:25];
+    wire [6:0] _funct7 = data_in_inst [31:25];
     //immediate decoder
     wire [11:0] _imm_I = data_in_inst[31:20];
     wire [6:0] _imm_S = {data_in_inst[31:25], data_in_inst[11:7]};
@@ -112,6 +114,9 @@ module inst_decode(
     assign rs2 = _rs2;
 
     assign jump_ops = _jump_ops;
+    
+    assign funct3 = _funct3;
+    assign funct7 = _funct7[5];
      
     
                             
