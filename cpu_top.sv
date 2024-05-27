@@ -133,27 +133,67 @@ module cpu_top(
                                 b <= sig_imm_I;
                                 //ALU_out <= $signed(a) < $signed(b); //set c = qa < imm_I (logic operations need $signed function)  <<<< marin rjesi sta si tu htjeo
                             end
-                            SRLI: ;
-                            SRAI: ;
-                            ANDI: ;
-                            ORI: ;
-                            XORI: ; //note, XORI rd, rs1, -1 performs a bitwise logical inversion of register rs1 (assembler pseudo-instruction NOT rd, rs) 
-                            LUI: ;
+                            SRLI: begin
+                                a <= qa;
+                                b <= sig_imm_I;
+                            end
+                            SRAI: begin
+                                a <= qa;
+                                b <= sig_imm_I;
+                            end
+                            ANDI: begin
+                                a <= qa;
+                                b <= sig_imm_I;
+                            end
+                            ORI: begin
+                                a <= qa;
+                                b <= sig_imm_I;
+                            end
+                            XORI: begin
+                                a <= qa;
+                                b <= sig_imm_I;
+                            end //note, XORI rd, rs1, -1 performs a bitwise logical inversion of register rs1 (assembler pseudo-instruction NOT rd, rs) 
+                            LUI: begin
+                                a <= qa;
+                                b <= sig_imm_I;
+                            end
                             AUIPC:begin 
-                                // ALU_out <= PC; TODO
+                                ALU_out <= PC; 
+                                b <= sig_imm_I;
                             end
                             //Register-Register operations
                             ADD: begin
                                 a <= qa;
                                 b <= qb;
                             end            
-                            SUB: ;
-                            _XOR: ;
-                            _OR: ;
-                            _AND: ;
-                            SRL: ;
-                            SLL: ;
-                            SLT: ;
+                            SUB: begin
+                                a <= qa;
+                                b <= qb;
+                            end 
+                            _XOR: begin
+                                a <= qa;
+                                b <= qb;
+                            end 
+                            _OR: begin
+                                a <= qa;
+                                b <= qb;
+                            end 
+                            _AND: begin
+                                a <= qa;
+                                b <= qb;
+                            end 
+                            SRL: begin
+                                a <= qa;
+                                b <= qb;
+                            end 
+                            SLL: begin
+                                a <= qa;
+                                b <= qb;
+                            end 
+                            SLT: begin
+                                a <= qa;
+                                b <= qb;
+                            end 
 							//store instruction adress calculation 
 							(SB | SW | SH):begin
 							     a <= qa;
@@ -221,12 +261,31 @@ module cpu_top(
                                 c <= ALU_out;
                                 T <= WRITE_BACK; //load and go to write
                             end
-                            SRLI: ;
-                            SRAI: ;
-                            ANDI: ;
-                            ORI: ;
-                            XORI: ; //note, XORI rd, rs1, -1 performs a bitwise logical inversion of register rs1 (assembler pseudo-instruction NOT rd, rs) 
-                            LUI: ;
+                            SRLI: begin
+                                c <= ALU_out; 
+                                T <= WRITE_BACK;
+                            end
+                            SRAI: begin
+                                c <= ALU_out; 
+                                T <= WRITE_BACK;
+                            end
+                            ANDI: begin
+                                c <= ALU_out; 
+                                T <= WRITE_BACK;
+                            end
+                            ORI: begin
+                                c <= ALU_out; 
+                                T <= WRITE_BACK;
+                            end
+                            XORI: begin
+                                c <= ALU_out; 
+                                T <= WRITE_BACK;
+                            end 
+                            //note, XORI rd, rs1, -1 performs a bitwise logical inversion of register rs1 (assembler pseudo-instruction NOT rd, rs) 
+                            LUI:  begin
+                                c <= ALU_out; 
+                                T <= WRITE_BACK;
+                            end
                             AUIPC:begin
                                  c <= ALU_out; 
                                  T <= WRITE_BACK; //load and go to write
@@ -236,13 +295,34 @@ module cpu_top(
                                 c <= ALU_out;
                                 T <= WRITE_BACK; //load and go to write
                             end            
-                            SUB: ;
-                            _XOR: ;
-                            _OR: ;
-                            _AND: ;
-                            SRL: ;
-                            SLL: ;
-                            SLT: ;
+                            SUB: begin
+                                c <= ALU_out;
+                                T <= WRITE_BACK;
+                            end  
+                            _XOR: begin
+                                c <= ALU_out;
+                                T <= WRITE_BACK;
+                            end 
+                            _OR: begin
+                                c <= ALU_out;
+                                T <= WRITE_BACK;
+                            end 
+                            _AND: begin
+                                c <= ALU_out;
+                                T <= WRITE_BACK;
+                            end 
+                            SRL: begin
+                                c <= ALU_out;
+                                T <= WRITE_BACK;
+                            end 
+                            SLL: begin
+                                c <= ALU_out;
+                                T <= WRITE_BACK;
+                            end 
+                            SLT: begin
+                                c <= ALU_out;
+                                T <= WRITE_BACK;
+                            end 
 							//store instruction adress calculation 
 							(SB | SW | SH):begin 
                                  c = ALU_out;
