@@ -11,11 +11,11 @@
         "C_NUM_PERP_ARESETN": [ { "value": "1", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "C_NUM_INTERCONNECT_ARESETN": [ { "value": "1", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "C_NUM_PERP_RST": [ { "value": "1", "resolve_type": "user", "format": "long", "usage": "all" } ],
-        "C_NUM_BUS_RST": [ { "value": "1", "resolve_type": "user", "format": "long", "usage": "all" } ],
-        "C_AUX_RESET_HIGH": [ { "value": "0", "value_src": "propagated", "value_permission": "bd_and_user", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "C_NUM_BUS_RST": [ { "value": "1", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "C_AUX_RESET_HIGH": [ { "value": "1", "value_src": "propagated", "value_permission": "bd_and_user", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "C_EXT_RESET_HIGH": [ { "value": "1", "value_src": "propagated", "value_permission": "bd", "resolve_type": "user", "format": "long", "usage": "all" } ],
-        "C_AUX_RST_WIDTH": [ { "value": "4", "resolve_type": "user", "format": "long", "usage": "all" } ],
-        "C_EXT_RST_WIDTH": [ { "value": "4", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "C_AUX_RST_WIDTH": [ { "value": "4", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "C_EXT_RST_WIDTH": [ { "value": "4", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "Component_Name": [ { "value": "design_1_rst_clk_wiz_0_100M_0", "resolve_type": "user", "usage": "all" } ],
         "USE_BOARD_FLOW": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "RESET_BOARD_INTERFACE": [ { "value": "Custom", "resolve_type": "user", "usage": "all" } ]
@@ -25,7 +25,7 @@
         "C_EXT_RST_WIDTH": [ { "value": "4", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_AUX_RST_WIDTH": [ { "value": "4", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_EXT_RESET_HIGH": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ],
-        "C_AUX_RESET_HIGH": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_AUX_RESET_HIGH": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_NUM_BUS_RST": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_NUM_PERP_RST": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_NUM_INTERCONNECT_ARESETN": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ],
@@ -105,7 +105,7 @@
           "abstraction_type": "xilinx.com:signal:reset_rtl:1.0",
           "mode": "slave",
           "parameters": {
-            "POLARITY": [ { "value": "ACTIVE_LOW", "value_src": "propagated", "value_permission": "bd", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "POLARITY": [ { "value": "ACTIVE_HIGH", "value_src": "user_prop", "value_permission": "bd", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
             "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
           },
           "port_maps": {

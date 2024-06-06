@@ -2,11 +2,12 @@
 
 module inst_decode(
     input[31:0]  INST_REG,
+    input aresetn,
     input aclk,
     input alu_flag,
     output [4:0] rd, rs1, rs2,
     output [31:0] imm,
-    output alu_operation,
+    output [3:0] alu_operation,
     output[6:0] opcode,
     output [1:0] a_select,
     output [1:0] b_select,
@@ -83,10 +84,12 @@ module inst_decode(
     always_comb begin
         //imm select
         case(_opcode)
-            7'b0100011: _imm <= {{20{INST_REG[31]}},INST_REG[31:25], INST_REG[11:7]}; //S type store
-            7'b1100011: _imm <= {{20{INST_REG[31]}},INST_REG[31:25], INST_REG[11:8], 1'b0}; //B type branch
-            7'b0010011, 7'b1100111, 7'b0000011: _imm <= {{20{INST_REG[31]}},{INST_REG[31:20]}}; //I type (imm_alu_op or load or jalr)
-            7'b0110111 , 7'b0010011: _imm <=  {{12{INST_REG[31]}},{INST_REG[31:12]}}; //U type (LUI or AUI)
+            7'b0100011: _imm <= {{20{INST_REG[31]}}, INST_REG[31:25], INST_REG[11:7]}; //S type store
+            7'b1100011: _imm <= {{20{INST_REG[31]}}, INST_REG[31:25], INST_REG[11:8], 1'b0}; //B type branch
+            7'b0010011: _imm <= {{20{INST_REG[31]}}, {INST_REG[31:20]}}; //I type (imm_alu_op or load or jalr)
+            7'b1100111: _imm <= {{20{INST_REG[31]}}, {INST_REG[31:20]}}; //I type (imm_alu_op or load or jalr)
+            7'b0000011: _imm <= {{20{INST_REG[31]}}, {INST_REG[31:20]}}; //I type (imm_alu_op or load or jalr)
+            7'b0110111 , 7'b0010011: _imm <=  {{INST_REG[31:12]}, {12'b000000000000}}; //U type (LUI or AUI)
             7'b1101111: _imm <= {{12{INST_REG[31]}}, INST_REG[19:12], INST_REG[20], INST_REG[30:25], INST_REG[24:21], 1'b0}; // j type jal
             7'b1110011, 7'b0110011: _imm <= 7'b0; // r type (csr, reg_alu_op)
             default: _imm <= 7'b0;           
@@ -108,7 +111,7 @@ module inst_decode(
             7'b1101111: _alu_operation <= 4'b0000; // jal (this is diffrent in pipelined)
             7'b0110011, 7'b0010011: begin // r type
                  case (_funct3)
-                     3'b000: _alu_operation <= _funct7[5] ? 4'b0000 : 4'b0001; // add / sub
+                     3'b000: _alu_operation <= _funct7[5] ? 4'b0001 : 4'b0000; // add / sub
                      3'b001: _alu_operation <= 4'b0010; //shiftleft
                      3'b010: _alu_operation <= 4'b0011; // lessthen
                      3'b011: _alu_operation <= 4'b1011;  //sltu
@@ -150,14 +153,16 @@ module inst_decode(
             DECODE:begin
                 case(_opcode)
                     7'b0010011:begin  //imm
-                        _a_select <= 2'b01;
+                        _b_select <= 2'b01; //imm
+                        _a_select <= 2'b00; // 0
                         _PC_enable <= 1'b0; //no nextPC select
                         _c_select <= 2'b00; //REG_FILE[rs] //reg file  for pseudo mv ,goes to writeback if rs = 0 TODO
                         _next_PC_select <= 2'b00; // pc <= pc_plus_4
                         //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
                     end
                     7'b0110011:begin //reg
-                        _a_select <= 2'b01;
+                        _a_select <= 2'b00;
+                        _b_select <= 2'b00;
                         _PC_enable <= 1'b0; //no nextPC select
                         _next_PC_select <= 2'b00; // pc <= pc_plus_4
                         //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
@@ -181,8 +186,15 @@ module inst_decode(
                         _PC_enable = 1'b0;
                         _next_PC_select <= 2'b00; // pc <= pc_plus_4       
                     end
-                    7'b0000011: ; //load //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
-                    7'b0100011: ; //store //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
+                    7'b0000011: begin  //imm
+                        _b_select <= 2'b01; //imm
+                        _a_select <= 2'b01;
+                        _PC_enable <= 1'b0; //no nextPC select
+                        _c_select <= 2'b00; //REG_FILE[rs] //reg file  for pseudo mv ,goes to writeback if rs = 0 TODO
+                        _next_PC_select <= 2'b00; // pc <= pc_plus_4
+                        //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
+                    end //load //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
+                    7'b0100011: _PC_enable <= 1'b0; //store //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
                     //jalr
                     7'b1100111: ;  //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly //jalr
                     7'b1101111: begin //jal
@@ -210,13 +222,13 @@ module inst_decode(
             EXECUTE:begin    
                 case(_opcode)
                     7'b0010011:begin  //imm
-                        _a_select <= 2'b01; //qa
+                        _a_select <= 2'b00; //qa
                         _b_select <= 2'b01; //imm
                         _c_select <= 2'b01; // write to c
                         _PC_enable <= 1'b0;
                      end
                     7'b0110011:begin //reg
-                        _a_select <= 2'b01; //qa
+                        _a_select <= 2'b00; //qa
                         _b_select <= 2'b00; //qb
                         _c_select <= 2'b01; //write to c
                         _PC_enable <= 1'b0;
@@ -230,11 +242,17 @@ module inst_decode(
                     end
                     7'b0000011:begin //load
                         _a_select <= 2'b01; //qa
-                        _b_select <= 2'b01; //imm                       
+                        _b_select <= 2'b01; //imm
+                        _PC_enable <= 1'b0;
+                        _c_select <= 2'b01;     
+                        _m2r_select <= 1'b0;                    
                     end
                     7'b0100011:begin  //store
                         _a_select <= 2'b01; //qa
-                        _b_select <= 2'b01; //imm  
+                        _b_select <= 2'b01; //imm
+                        _PC_enable <= 1'b0;
+                        _c_select <= 2'b01;
+                        _m2r_select <= 1'b0;    
                     end
                     7'b1100111: begin  //jalr
                        _a_select = 2'b01; //qa
@@ -260,8 +278,9 @@ module inst_decode(
              MEMORY:begin
                   
                case(_opcode)
-                    7'b0000011: _m2r_select <= 1'b0; //load 
+                    7'b0000011:begin _m2r_select <= 1'b0; _PC_enable <= 1'b0; end //load 
                     7'b0100011:begin //store
+                        _PC_enable <= 1'b0;
                         we_data <= 4'b1111;
 						_m2r_select <= 1'b0;		
                     end    
@@ -366,7 +385,8 @@ module inst_decode(
      end
      
     always@(posedge aclk)begin
-        T <= next_state;
+        if (aresetn) T <= next_state;
+        else T <= 0;
     end                    
     
     assign rd = _rd;

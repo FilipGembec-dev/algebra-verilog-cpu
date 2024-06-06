@@ -1,7 +1,7 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0x40BFD57AA4B5A002",
+      "boundary_crc": "0x40BFD57AC548BC24",
       "device": "xc7a35tcpg236-1",
       "gen_directory": "../../../../project_1.gen/sources_1/bd/design_1",
       "name": "design_1",
@@ -21,6 +21,9 @@
         "type": "clk",
         "direction": "I",
         "parameters": {
+          "ASSOCIATED_RESET": {
+            "value": "reset"
+          },
           "CLK_DOMAIN": {
             "value": "design_1_sys_clock",
             "value_src": "default"
@@ -66,8 +69,20 @@
           "CLK_IN1_BOARD_INTERFACE": {
             "value": "sys_clock"
           },
+          "ENABLE_CLOCK_MONITOR": {
+            "value": "false"
+          },
+          "PRIMITIVE": {
+            "value": "MMCM"
+          },
           "RESET_BOARD_INTERFACE": {
             "value": "reset"
+          },
+          "RESET_PORT": {
+            "value": "reset"
+          },
+          "RESET_TYPE": {
+            "value": "ACTIVE_HIGH"
           },
           "USE_BOARD_FLOW": {
             "value": "true"
@@ -79,7 +94,18 @@
         "ip_revision": "14",
         "xci_name": "design_1_rst_clk_wiz_0_100M_0",
         "xci_path": "ip\\design_1_rst_clk_wiz_0_100M_0\\design_1_rst_clk_wiz_0_100M_0.xci",
-        "inst_hier_path": "rst_clk_wiz_0_100M"
+        "inst_hier_path": "rst_clk_wiz_0_100M",
+        "parameters": {
+          "C_AUX_RST_WIDTH": {
+            "value": "4"
+          },
+          "C_EXT_RST_WIDTH": {
+            "value": "4"
+          },
+          "C_NUM_BUS_RST": {
+            "value": "1"
+          }
+        }
       },
       "blk_mem_gen_0": {
         "vlnv": "xilinx.com:ip:blk_mem_gen:8.4",
@@ -100,14 +126,23 @@
           "Enable_32bit_Address": {
             "value": "true"
           },
+          "Enable_A": {
+            "value": "Always_Enabled"
+          },
           "Fill_Remaining_Memory_Locations": {
-            "value": "false"
+            "value": "true"
           },
           "Load_Init_File": {
             "value": "true"
           },
           "Memory_Type": {
             "value": "True_Dual_Port_RAM"
+          },
+          "Register_PortA_Output_of_Memory_Primitives": {
+            "value": "false"
+          },
+          "Register_PortB_Output_of_Memory_Primitives": {
+            "value": "false"
           },
           "Write_Depth_A": {
             "value": "16000"
@@ -250,6 +285,12 @@
           "blk_mem_gen_0/addra"
         ]
       },
+      "cpu_wrapper_0_data_out_data": {
+        "ports": [
+          "cpu_wrapper_0/data_out_data",
+          "blk_mem_gen_0/dinb"
+        ]
+      },
       "cpu_wrapper_0_data_out_inst": {
         "ports": [
           "cpu_wrapper_0/data_out_inst",
@@ -259,14 +300,7 @@
       "cpu_wrapper_0_en_data": {
         "ports": [
           "cpu_wrapper_0/en_data",
-          "blk_mem_gen_0/enb",
-          "blk_mem_gen_0/dinb"
-        ]
-      },
-      "cpu_wrapper_0_en_inst": {
-        "ports": [
-          "cpu_wrapper_0/en_inst",
-          "blk_mem_gen_0/ena"
+          "blk_mem_gen_0/enb"
         ]
       },
       "cpu_wrapper_0_we_data": {
@@ -284,15 +318,16 @@
       "reset_1": {
         "ports": [
           "reset",
+          "rst_clk_wiz_0_100M/ext_reset_in",
           "clk_wiz_0/reset",
-          "rst_clk_wiz_0_100M/ext_reset_in"
+          "rst_clk_wiz_0_100M/aux_reset_in"
         ]
       },
       "rst_clk_wiz_0_100M_bus_struct_reset": {
         "ports": [
           "rst_clk_wiz_0_100M/bus_struct_reset",
-          "blk_mem_gen_0/rstb",
-          "blk_mem_gen_0/rsta"
+          "blk_mem_gen_0/rsta",
+          "blk_mem_gen_0/rstb"
         ]
       },
       "rst_clk_wiz_0_100M_peripheral_aresetn": {
