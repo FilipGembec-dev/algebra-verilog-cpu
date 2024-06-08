@@ -11,28 +11,21 @@ module inst_decode(
     output[6:0] opcode,
     output [1:0] a_select,
     output [1:0] b_select,
-    output [1:0] c_select, //regfile select (it can be interpeted as ALU_out select need to refactor)
+    output [2:0] c_select, //regfile select (it can be interpeted as ALU_out select need to refactor)
     output [1:0] next_PC_select,
     output PC_enable, //regfile select
     output IR_enable,
     output wb,
     output current_PC_enable,
     output m2r_select, //select adress from rd(reg destination, 0) or c(memory destination, 1)
-    output [3:0] _we_data
-    
+    output [3:0] _we_data,
+    output c_enable
     );
     localparam FETCH = 3'b000;
     localparam DECODE = 3'b001;
     localparam EXECUTE = 3'b010;
     localparam MEMORY = 3'b011;
     localparam WRITE_BACK = 3'b100;
-    
-    //typedef enum bit [2:0] {FETCH,DECODE,EXECUTE,MEMORY,WRITE_BACK} e_states;
-//    typedef enum bit [31:0] {ADDI = 32'h1, SLTI = 32'h2, ANDI = 32'h4, ORI = 32'h8, XORI = 32'h10, LUI = 32'h20, AUIPC = 32'h40, SLLI = 32'h80, SRLI = 32'h100,
-//                             SRAI = 32'h200, ADD = 32'h400, SUB = 32'h800,_XOR = 32'h1000, _OR = 32'h2000, _AND = 32'h4000, SLL = 32'h8000, SRL = 32'h10000,
-//                             SLT = 32'h20000, LB = 32'h40000, LH = 32'h80000, LW = 32'h100000, SB = 32'h200000, SH = 32'h400000, SW = 32'h800000,
-//                             JAL = 32'h1000000, JALR = 32'h2000000, BEQ = 32'h4000000 ,BEN = 32'h8000000, BLT = 32'h10000000, BGE = 32'h20000000, 
-//	                         BLTU = 32'h40000000, BGEU = 32'h80000000} e_operations;
     
     //R-type instruction parts decoder
     wire [6:0] _opcode = INST_REG [6:0];
@@ -64,7 +57,7 @@ module inst_decode(
     bit[2:0] T = 0;
     bit [1:0] _a_select; //select a_alu_input (reg a, PC, current_PC) 
     bit [1:0] _b_select; //select b_alu_input (reg b, imm)
-    bit [1:0] _c_select; //select for c reg file (ALU_out, imm, REGFILE[rs1], PC)
+    bit [2:0] _c_select; //select for c reg file (ALU_out, imm, REGFILE[rs1], PC)
     bit [1:0] _next_PC_select; //select next PC output (PC+4, ALU_out, c, PC)
     bit _PC_enable; //enable write to pc
     bit _IR_enable; //enable write to instruction register
@@ -73,8 +66,8 @@ module inst_decode(
     bit areset;
     bit [3:0] _alu_operation;
     bit _m2r_select; //memory to register
-    bit we_data;
-    
+    bit [3:0] we_data;
+    bit _c_enable;
     
    
     //immideate multiplexer
@@ -89,7 +82,8 @@ module inst_decode(
             7'b0010011: _imm <= {{20{INST_REG[31]}}, {INST_REG[31:20]}}; //I type (imm_alu_op or load or jalr)
             7'b1100111: _imm <= {{20{INST_REG[31]}}, {INST_REG[31:20]}}; //I type (imm_alu_op or load or jalr)
             7'b0000011: _imm <= {{20{INST_REG[31]}}, {INST_REG[31:20]}}; //I type (imm_alu_op or load or jalr)
-            7'b0110111 , 7'b0010011: _imm <=  {{INST_REG[31:12]}, {12'b000000000000}}; //U type (LUI or AUI)
+            7'b0110111:  _imm <=  {{INST_REG[31:12]}, {12'b000000000000}}; //U type (LUI or AUI)
+            7'b0010111: _imm <=  {{INST_REG[31:12]}, {12'b000000000000}}; //U type (LUI or AUI)
             7'b1101111: _imm <= {{12{INST_REG[31]}}, INST_REG[19:12], INST_REG[20], INST_REG[30:25], INST_REG[24:21], 1'b0}; // j type jal
             7'b1110011, 7'b0110011: _imm <= 7'b0; // r type (csr, reg_alu_op)
             default: _imm <= 7'b0;           
@@ -126,16 +120,17 @@ module inst_decode(
         endcase
         
              //defult cases for operations 
-        _a_select <= 2'b10; //PC
-        _b_select <= 2'b10; //constant 4
+        _a_select <= 2'b00; //TODO this is fix for jalr
+        _b_select <= 2'b00; //TODO this is fix for jalr
         _PC_enable <= 1'b1; // PC <= ALU_out 
         _next_PC_select <= 2'b01; //redirect alu_out to pc
         _IR_enable <= 1'b0;
-        _c_select <= 2'b10; // save jump adress to registar c   
+        _c_select <= 3'b010; // save jump adress to registar c   
         _wb <= 1'b0;
         _current_PC_enable <= 1'b1; 
         _m2r_select <= 1'b0;
-        we_data <= 4'b0000;      
+        we_data <= 4'b0000;  
+        _c_enable <= 1'b1;    
         
         //
         case(T)
@@ -146,7 +141,7 @@ module inst_decode(
                 _current_PC_enable <= 1'b1;
                 _a_select <= 2'b00; //PC
                 _b_select <= 2'b01; //imm
-                _c_select <= 2'b10; // save jump adress to registar c
+                _c_select <= 3'b010; // save jump adress to registar c
                 _m2r_select <= 1'b0;
                 we_data <= 4'b0000;  
             end
@@ -156,7 +151,7 @@ module inst_decode(
                         _b_select <= 2'b01; //imm
                         _a_select <= 2'b00; // 0
                         _PC_enable <= 1'b0; //no nextPC select
-                        _c_select <= 2'b00; //REG_FILE[rs] //reg file  for pseudo mv ,goes to writeback if rs = 0 TODO
+                        _c_select <= 3'b000; //REG_FILE[rs] //reg file  for pseudo mv ,goes to writeback if rs = 0 TODO
                         _next_PC_select <= 2'b00; // pc <= pc_plus_4
                         //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
                     end
@@ -168,49 +163,62 @@ module inst_decode(
                         //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
                     end
                     7'b0110111: begin //lui
+                        _a_select <= 2'b00;
+                        _b_select <= 2'b00;
                         _PC_enable <= 1'b0; //no nextPC select
-                        _c_select <= 2'b11; //immmediate regtype
-                        _next_PC_select <= 2'b00; // pc <= pc_plus_4
+                        _c_select <= 3'b011; //immmediate regtype
+                        _next_PC_select <= 2'b00; // pc <= pc_plus_4   
                     end
-                    7'b0010011:begin //aui
+                    7'b0010111:begin //aui
                         _a_select <= 2'b10; //current_PC
                         _b_select <= 2'b01; //imm
-                        _next_PC_select <= 2'b01; //redirect alu_out to pc
-                        _PC_enable <= 1'b1; // write enable to pc (PC <= ALU_out)       
+                        _next_PC_select <= 2'b00; //redirect alu_out to pc
+                        _PC_enable <= 1'b0; // write enable to pc (PC <= ALU_out)
+                        _c_select <= 3'b001; //write to c       
                     end
-                    7'b1110011: ; //csr
+                    7'b1110011: begin //csr
+                     _a_select <= 2'b01; //qa
+                     _b_select <= 2'b01; //imm
+                     end
                     7'b1100011:begin //branch
-                        _a_select <= 2'b00; //PC
+                        _a_select <= 2'b01; //PC
                         _b_select <= 2'b01; //imm
-                        _c_select <= 2'b10; // save jump adress to registar c
-                        _PC_enable = 1'b0;
+                        _c_select <= 3'b010; // save jump adress to registar c
+                        _PC_enable <= 1'b0;
                         _next_PC_select <= 2'b00; // pc <= pc_plus_4       
                     end
                     7'b0000011: begin  //imm
                         _b_select <= 2'b01; //imm
                         _a_select <= 2'b01;
                         _PC_enable <= 1'b0; //no nextPC select
-                        _c_select <= 2'b00; //REG_FILE[rs] //reg file  for pseudo mv ,goes to writeback if rs = 0 TODO
+                        _c_select <= 3'b000; //REG_FILE[rs] //reg file  for pseudo mv ,goes to writeback if rs = 0 TODO
                         _next_PC_select <= 2'b00; // pc <= pc_plus_4
                         //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
                     end //load //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
-                    7'b0100011: _PC_enable <= 1'b0; //store //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
-                    //jalr
-                    7'b1100111: ;  //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly //jalr
+                    7'b0100011:begin 
+                    _PC_enable <= 1'b0; //store //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
+                    _a_select <= 2'b00;
+                    _b_select <= 2'b00;
+                    end//jalr
+                    7'b1100111: begin
+                        _a_select <= 2'b01;
+                        _b_select <= 2'b01;
+                        _PC_enable <= 1'b0; 
+                    end   //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly //jalr
                     7'b1101111: begin //jal
-                       _a_select <= 2'b00; //PC
+                       _a_select <= 2'b01; //PC
                        _b_select <= 2'b01; //imm
-                       _c_select <= 2'b10; // save jump adress to registar c
+                       _c_select <= 3'b100; // save jump adress to registar c
                        _next_PC_select <= 2'b01; //redirect alu_out to pc
                        _PC_enable <= 1'b1; 
                     end 
                     7'b0010011: ; //sssrli // b = rs2 TODO
                     default:begin
-                        _a_select <= 2'b00; //PC
+                        _a_select <= 2'b01; //PC
                         _b_select <= 2'b10; //constant 4
                         _PC_enable <= 1'b1; // PC <= ALU_out 
                         _next_PC_select <= 2'b00; //redirect alu_out to pc
-                        _c_select <= 2'b10; // save jump adress to registar c
+                        _c_select <= 3'b010; // save jump adress to registar c
                         _wb <= 0;
                         _current_PC_enable <= 1'b0;
                         _IR_enable <= 1'b0;
@@ -224,13 +232,13 @@ module inst_decode(
                     7'b0010011:begin  //imm
                         _a_select <= 2'b00; //qa
                         _b_select <= 2'b01; //imm
-                        _c_select <= 2'b01; // write to c
+                        _c_select <= 3'b001; // write to c
                         _PC_enable <= 1'b0;
                      end
                     7'b0110011:begin //reg
                         _a_select <= 2'b00; //qa
                         _b_select <= 2'b00; //qb
-                        _c_select <= 2'b01; //write to c
+                        _c_select <= 3'b001; //write to c
                         _PC_enable <= 1'b0;
                     end
 //                    7'b1110011: ; //csr
@@ -241,33 +249,36 @@ module inst_decode(
                         _PC_enable <= alu_flag ? 1'b0 : 1'b1;       
                     end
                     7'b0000011:begin //load
-                        _a_select <= 2'b01; //qa
+                        _a_select <= 2'b00; //qa
                         _b_select <= 2'b01; //imm
                         _PC_enable <= 1'b0;
-                        _c_select <= 2'b01;     
+                        _c_select <= 3'b001;     
                         _m2r_select <= 1'b0;                    
                     end
                     7'b0100011:begin  //store
-                        _a_select <= 2'b01; //qa
+                        _a_select <= 2'b00; //qa
                         _b_select <= 2'b01; //imm
                         _PC_enable <= 1'b0;
-                        _c_select <= 2'b01;
+                        _c_select <= 3'b001;
                         _m2r_select <= 1'b0;    
                     end
-                    7'b1100111: begin  //jalr
-                       _a_select = 2'b01; //qa
-                       _b_select = 2'b01; //imm
-                       _c_select = 2'b01; //write ALU_out to c (set to zero if rd = 0 ???)
+                    7'b1100111:begin  //jalr
+                       _a_select <= 2'b00; //qa
+                       _b_select <= 2'b01; //imm
+                       _c_select <= 3'b010; //c = pc + 4
                        _next_PC_select <= 2'b01; //redirect alu_out to pc
                        _PC_enable <= 1'b1; // enable write to pc
                     end    
-                    7'b0010011: ; //sssrli // b = rs2 TODO
+                    7'b0010011:begin 
+                       _a_select <= 2'b01; //qa
+                       _b_select <= 2'b01; //imm
+                    end //sssrli // b = rs2 TODO
                     default:begin
                         _a_select <= 2'b01; //qa
                         _b_select <= 2'b10; //constant 4
                         _PC_enable <= 1'b0; // PC <= ALU_out 
                         _next_PC_select <= 2'b00; //redirect alu_out to pc
-                        _c_select <= 2'b10; // save jump adress to registar c
+                        _c_select <= 3'b010; // save jump adress to registar c
                         _wb <= 0;
                         _current_PC_enable <= 1'b0;
                         _IR_enable <= 1'b0;
@@ -275,21 +286,22 @@ module inst_decode(
                     end    
                 endcase 
              end
-             MEMORY:begin
-                  
+             MEMORY:begin                  
                case(_opcode)
-                    7'b0000011:begin _m2r_select <= 1'b0; _PC_enable <= 1'b0; end //load 
+                    7'b0000011:begin _m2r_select <= 1'b0; _PC_enable <= 1'b0; _a_select <= 2'b00; _b_select <= 2'b00; end //load 
                     7'b0100011:begin //store
                         _PC_enable <= 1'b0;
                         we_data <= 4'b1111;
-						_m2r_select <= 1'b0;		
+						_m2r_select <= 1'b0;
+						_a_select <= 2'b00;
+                        _b_select <= 2'b01;		
                     end    
                     default:begin
                         _a_select <= 2'b00; //PC
                         _b_select <= 2'b10; //constant 4
                         _PC_enable <= 1'b0; // PC not enabled
                         _next_PC_select <= 2'b00; //redirect alu_out to pc
-                        _c_select <= 2'b10; // save jump adress to registar c
+                        _c_select <= 3'b010; // save jump adress to registar c
                         _wb <= 0;
                         _current_PC_enable <= 1'b0;
                         _IR_enable <= 1'b0;
@@ -298,12 +310,25 @@ module inst_decode(
                endcase 
              end
              WRITE_BACK:begin
+                 _a_select <= 2'b00;
+                 _b_select <= 2'b00;
                  we_data <= 4'b0000;   
                  _wb <= 1'b1;
                  _PC_enable <= 1'b0;
                  _current_PC_enable <= 1'b0; 
-                 if (_opcode == 7'b0000011) _m2r_select <= 1'b0;  //load TODO
-                 else _m2r_select <= 1'b1;   
+                 if (_opcode == 7'b0000011)begin 
+                    _m2r_select <= 1'b0;  //load TODO
+                    _a_select <= 2'b00;
+                    _b_select <= 2'b00;
+                 end else begin
+                    _m2r_select <= 1'b1;
+                    _a_select <= 2'b00;
+                    _b_select <= 2'b00;
+                 end   
+             end
+             default:begin
+                 _a_select <= 2'b01; //qa
+                 _b_select <= 2'b01; //imm
              end              
         endcase
     
@@ -328,8 +353,8 @@ module inst_decode(
                         7'b0110111: begin //lui
                             next_state <= WRITE_BACK;
                         end
-                        7'b0010011:begin //aui
-                           next_state <= FETCH;     
+                        7'b0010111:begin //aui
+                           next_state <= WRITE_BACK;
                         end
                         7'b1110011: ; //csr
                         7'b1100011:begin //branch
@@ -338,8 +363,8 @@ module inst_decode(
                         7'b0000011: next_state <= EXECUTE; //load
                         7'b0100011: next_state <= EXECUTE; //store
                         7'b1100111: next_state <= EXECUTE; //jalr
-                        7'b1101111: begin //jal
-                           next_state <= (_rd == 0) ?  WRITE_BACK : FETCH; //pseudo  jump
+                        7'b1101111: begin //jalr
+                           next_state <= (_rd == 5'b00000) ?  FETCH : WRITE_BACK; //pseudo  jump
                         end 
                         7'b0010011: next_state <= EXECUTE ; //sssrli // b = rs2 TODO
                         default:begin
@@ -358,10 +383,10 @@ module inst_decode(
                         7'b1100011:begin //branch
                             next_state <= FETCH;       
                         end
-                        7'b0000011: next_state <= WRITE_BACK; //load
+                        7'b0000011: next_state <= MEMORY; //load
                         7'b0100011: next_state <= MEMORY; //store
                         7'b1100111: begin  //jalr
-                           next_state <= (_rd == 0) ? WRITE_BACK : FETCH;
+                           next_state <= WRITE_BACK;
                         end    
                         default:begin
                             next_state <= WRITE_BACK;

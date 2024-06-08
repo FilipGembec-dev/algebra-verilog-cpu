@@ -60,7 +60,7 @@ module cpu_top(
 	wire [31:0] memory_adress = c;
 	//load store wires
 	bit [31:0] _addr_data  = 32'b0;
-	bit [2:0]  _we_data;
+	bit [3:0]  _we_data;
 	bit [31:0] data_reg; //register for storing data from memory/instructions
 	
 	//decode settings
@@ -82,7 +82,7 @@ module cpu_top(
 
 	wire [1:0] a_select;
 	wire [1:0] b_select;
-	wire [1:0] c_select;
+	wire [2:0] c_select;
 	wire PC_enable;
 	wire wb;
 	wire IR_enable;
@@ -124,10 +124,11 @@ module cpu_top(
             
              
             case (c_select)
-                2'b00: c <= REG_FILE[rs1];
-                2'b01: c <= ALU_out;
-                2'b10: c <= PC;
-                2'b11:	c <= imm;		
+                3'b000: c <= REG_FILE[rs1];
+                3'b001: c <= ALU_out;
+                3'b010: c <= PC;
+                3'b011:	c <= imm;
+                3'b100: c <= PC_plus_4;		
             endcase
             
             case (PC_enable)
@@ -158,12 +159,12 @@ module cpu_top(
 	end
     
     //net assigments
-    assign data_out_data = REG_FILE[qb]; // for store
+    assign data_out_data = qb; // for store
     assign addr_data = memory_adress; //c is memory adress
-    assign addr_inst = PC; //use word adress to read memory
+    assign addr_inst = PC[31:2]; //use word adress to read memory
 	assign REG_FILE[0] = 32'h00; //register x0 is hardwired to the constant
 	assign we_data = _we_data;
-	assign en_inst = PC_enable;
+	//assign en_inst = PC_enable;
 	//assign addr_data = _addr_data;
 	wire alu_flag;
 	//instantiations
