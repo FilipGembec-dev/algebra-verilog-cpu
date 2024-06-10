@@ -11,15 +11,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="5,561.095 ns"></ZoomStartTime>
-      <ZoomEndTime time="6,087.781 ns"></ZoomEndTime>
-      <Cursor1Time time="5,747.811 ns"></Cursor1Time>
+      <ZoomStartTime time="3,011.628 ns"></ZoomStartTime>
+      <ZoomEndTime time="3,117.675 ns"></ZoomEndTime>
+      <Cursor1Time time="3,100.000 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="186"></NameColumnWidth>
+      <NameColumnWidth column_width="178"></NameColumnWidth>
       <ValueColumnWidth column_width="58"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="43" />
+   <WVObjectSize size="44" />
    <wvobject fp_name="/design_1_simulator/reset" type="logic">
       <obj_property name="ElementShortName">reset</obj_property>
       <obj_property name="ObjectShortName">reset</obj_property>
@@ -63,7 +63,6 @@
    <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/REG_FILE" type="array">
       <obj_property name="ElementShortName">REG_FILE[31:0][31:0]</obj_property>
       <obj_property name="ObjectShortName">REG_FILE[31:0][31:0]</obj_property>
-      <obj_property name="isExpanded"></obj_property>
    </wvobject>
    <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/PC" type="array">
       <obj_property name="ElementShortName">PC[31:0]</obj_property>
@@ -104,6 +103,10 @@
    <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/alu_inst_0/c_o" type="array">
       <obj_property name="ElementShortName">c_o[31:0]</obj_property>
       <obj_property name="ObjectShortName">c_o[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/c" type="array">
+      <obj_property name="ElementShortName">c[31:0]</obj_property>
+      <obj_property name="ObjectShortName">c[31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/my_inst/_a_select" type="array">
       <obj_property name="ElementShortName">_a_select[1:0]</obj_property>
@@ -166,10 +169,6 @@
       <obj_property name="ElementShortName">data_out_data[31:0]</obj_property>
       <obj_property name="ObjectShortName">data_out_data[31:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/c" type="array">
-      <obj_property name="ElementShortName">c[31:0]</obj_property>
-      <obj_property name="ObjectShortName">c[31:0]</obj_property>
-   </wvobject>
    <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/rs1" type="array">
       <obj_property name="ElementShortName">rs1[4:0]</obj_property>
       <obj_property name="ObjectShortName">rs1[4:0]</obj_property>
@@ -195,5 +194,9 @@
    <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/m2r_select" type="logic">
       <obj_property name="ElementShortName">m2r_select</obj_property>
       <obj_property name="ObjectShortName">m2r_select</obj_property>
+   </wvobject>
+   <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/alu_inst_0/_alu_flag" type="logic">
+      <obj_property name="ElementShortName">_alu_flag</obj_property>
+      <obj_property name="ObjectShortName">_alu_flag</obj_property>
    </wvobject>
 </wave_config>

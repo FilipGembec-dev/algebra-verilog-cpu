@@ -17,69 +17,33 @@ module cpu_top(
     output en_data,
     output [3:0] we_data
     //decode instruction module
-    
     );
     
-    //state machine enum
-    localparam FETCH = 3'b000;
-    localparam DECODE = 3'b001;
-    localparam EXECUTE = 3'b010;
-    localparam MEMORY = 3'b011;
-    localparam WRITE_BACK = 3'b100;
-    
-    //inst_decode wires
-    wire[11:0] imm_I; 
-    wire[6:0] imm_S, imm_B;
-    wire[19:0] imm_U, imm_J;
-    wire [4:0] rd, rs1, rs2;
-    
-
-   
-    
+    //source and destination
+    wire [4:0] rd, rs1, rs2;   
+    //imm
     wire [31:0] imm;
     
     localparam c_register_file_len = 32; // rv32i has 31 general-purpose registers x1-x31, which hold integer values
-    //register file
+    //REGFILE PC INSTREG(program register)
     bit [31:0] REG_FILE [c_register_file_len - 1 : 0];
-    //program counter -> PC
     reg [31:0] PC = 32'd0;
-    //instruction reg -> INST_REG
-    bit [31:0] INST_REG;
-    
-	//TO DO: FENCE, FENCE.1, ECALL, EBREAK
-	
-	wire m2r_select;
-	
-	//setting regfile readports
+    wire [31:0] PC_plus_4 = PC + 4;
+    bit [31:0] INST_REG;	
+	//setting REGFILE read registers a and b
     reg [31:0] qa;
-	reg [31:0] qb;
-	
-    //registes for extra control  
-	bit [31:0] current_PC;
-	bit [31:0] c;
-	wire [31:0] memory_adress = c;
-	//load store wires
-	bit [31:0] _addr_data  = 32'b0;
-	bit [3:0]  _we_data;
-	bit [31:0] data_reg; //register for storing data from memory/instructions
-	
-	//decode settings
-	bit [31:0] next_PC; //next_PC wire
+	reg [31:0] qb; 
+	//decode signals and registers
 	bit [31:0] a; //adder port A TODO: rename to alu_B
 	bit [31:0] b;  //adder port B TODO: rename to alu_B
-	bit [31:0] ALU_out; //adder out port    
-	
-	//to do: implement all mathematical operations vi alu
-	
-	//control signals
-	wire [3:0] alu_operation;
-	wire [6:0] opcode;
-	 //pc_plus_4 for branch
-	  
-	//assign enum to state tracker 
-    bit[2:0] T = 0;
-
-
+	bit [31:0] ALU_out; //adder out port
+	bit [31:0] data_reg; //register for storing data from memory/instructions
+	bit [31:0] current_PC; //save current PC
+	bit [31:0] c; //setting ALUout c register
+	wire [31:0] memory_adress = c; //adress for memory (always on)
+	wire m2r_select; //memory or c
+	wire alu_flag; //for logical operations alu
+    //see decode
 	wire [1:0] a_select;
 	wire [1:0] b_select;
 	wire [2:0] c_select;
@@ -88,10 +52,12 @@ module cpu_top(
 	wire IR_enable;
 	wire [1:0] next_PC_select;
 	wire current_PC_enable;
-	
-	wire [31:0] PC_plus_4 = PC + 4;
-	
-	//mux for select
+	bit [3:0]  _we_data;
+	bit [31:0] next_PC;    
+	wire [3:0] alu_operation; 	
+///////////////////////////////////////	
+//WIRE TO MULTIPLEXERS SELECT ACTIONS//
+//////////////////////////////////////
 	always_comb begin
 		case (a_select)
 			2'b00: a <= qa;
@@ -103,25 +69,25 @@ module cpu_top(
 		case (b_select)
 			2'b00: b <= qb;
 			2'b01: b <= imm;
-			2'b10: b <= 3'd4; //not needed
 			default: b <= qb;		
 		endcase
 		  	
 		case (next_PC_select)
 		  2'b00: next_PC <= PC_plus_4;
 		  2'b01: next_PC <= ALU_out;
-		  2'b10: next_PC <= c; //not needed
+		  2'b10: next_PC <= c; 
 		  default: next_PC <= PC_plus_4;	
 		endcase
 	end
 
-
+//////////////////////////////////////////////////////	
+//WIRES AND MULTIPLEXERS TO REGISTERS SELECT ACTIONS//
+/////////////////////////////////////////////////////
 	always@(posedge aclk)begin
 	   if (aresetn)begin
             qa <= (rs1==0) ? 0 : REG_FILE[rs1]; //loads into qa register (need to change name)
             qb <= (rs2==0) ? 0 : REG_FILE[rs2]; //loads into qb register (need to change name)
-            data_reg <= data_in_data;
-            
+            data_reg <= data_in_data;            
              
             case (c_select)
                 3'b000: c <= REG_FILE[rs1];
@@ -135,7 +101,7 @@ module cpu_top(
                 1'b0:; 
                 1'b1: PC <= next_PC;
             endcase
-            
+       
             case (wb)
                 1'b0: ;
                 1'b1: begin 
@@ -152,6 +118,7 @@ module cpu_top(
               1'b0: ;
               1'b1: current_PC <= PC;
             endcase
+            
 		end else begin
             PC <= 0;
             INST_REG <= 0;		  
@@ -164,19 +131,16 @@ module cpu_top(
     assign addr_inst = PC[31:2]; //use word adress to read memory
 	assign REG_FILE[0] = 32'h00; //register x0 is hardwired to the constant
 	assign we_data = _we_data;
-	//assign en_inst = PC_enable;
-	//assign addr_data = _addr_data;
-	wire alu_flag;
+	
 	//instantiations
 	 inst_decode my_inst( .INST_REG,
      .rd, .rs1, .rs2,
      .imm, 
      .alu_operation,
-     .opcode,
      .aclk,
      .a_select,.b_select,.c_select,.next_PC_select, .wb, .alu_flag, .IR_enable, .PC_enable, .current_PC_enable, .m2r_select, ._we_data, .aresetn
      );
     
-    alu alu_inst_0(.a_i(a), .b_i(b), .c_o(ALU_out), .alu_operation(alu_operation), .alu_flag(alu_flag));
+     alu alu_inst_0(.a_i(a), .b_i(b), .c_o(ALU_out), .alu_operation(alu_operation), .alu_flag(alu_flag));
 	
 endmodule
