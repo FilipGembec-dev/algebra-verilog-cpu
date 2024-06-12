@@ -17,7 +17,7 @@ module inst_decode(
     output wb,
     output current_PC_enable,
     output m2r_select,
-    output [3:0] _we_data,
+    output [3:0] _we_data
     );
     //areset zero is low impendence
     bit areset;
@@ -166,7 +166,6 @@ module inst_decode(
         _current_PC_enable <= 1'b0; 
         _m2r_select <= 1'b0;
         we_data <= 4'b0000;  
-        _c_enable <= 1'b0;    
         
         case(T)
             FETCH:begin
@@ -242,7 +241,7 @@ module inst_decode(
                     7'b1100111:begin  //jalr
                         _a_select <= 2'b00; //qa
                         _b_select <= 2'b01; //imm
-                        _c_select <= 3'b010; //c <= PC (following pc)
+                        _c_select <= 2'b10; //c <= PC (following pc)
                         _next_PC_select <= 2'b01; //redirect alu_out to pc
                         _PC_enable <= 1'b1; // enable write to pc
                     end    
@@ -355,8 +354,8 @@ module inst_decode(
     //select signals
     assign a_select = _a_select;
     assign b_select = _b_select;
-    assign c_select = _c_select; //regfile select (it can be interpeted as ALU_out select need to refactor)
-    assign PC_enable = _PC_enable; //regfile select
+    assign c_select = _c_select; 
+    assign PC_enable = _PC_enable; 
     assign wb = _wb;
     assign next_PC_select = _next_PC_select;
     assign IR_enable = _IR_enable;
