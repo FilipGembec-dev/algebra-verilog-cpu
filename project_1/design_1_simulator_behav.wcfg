@@ -11,12 +11,12 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="3,011.628 ns"></ZoomStartTime>
-      <ZoomEndTime time="3,117.675 ns"></ZoomEndTime>
-      <Cursor1Time time="3,100.000 ns"></Cursor1Time>
+      <ZoomStartTime time="2,763.000 ns"></ZoomStartTime>
+      <ZoomEndTime time="2,926.001 ns"></ZoomEndTime>
+      <Cursor1Time time="2,820.000 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="178"></NameColumnWidth>
+      <NameColumnWidth column_width="158"></NameColumnWidth>
       <ValueColumnWidth column_width="58"></ValueColumnWidth>
    </column_width_setting>
    <WVObjectSize size="44" />
@@ -63,6 +63,7 @@
    <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/REG_FILE" type="array">
       <obj_property name="ElementShortName">REG_FILE[31:0][31:0]</obj_property>
       <obj_property name="ObjectShortName">REG_FILE[31:0][31:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
    </wvobject>
    <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/PC" type="array">
       <obj_property name="ElementShortName">PC[31:0]</obj_property>
@@ -77,8 +78,8 @@
       <obj_property name="ObjectShortName">b_select[1:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/my_inst/c_select" type="array">
-      <obj_property name="ElementShortName">c_select[2:0]</obj_property>
-      <obj_property name="ObjectShortName">c_select[2:0]</obj_property>
+      <obj_property name="ElementShortName">c_select[1:0]</obj_property>
+      <obj_property name="ObjectShortName">c_select[1:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/my_inst/imm" type="array">
       <obj_property name="ElementShortName">imm[31:0]</obj_property>
@@ -107,6 +108,7 @@
    <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/c" type="array">
       <obj_property name="ElementShortName">c[31:0]</obj_property>
       <obj_property name="ObjectShortName">c[31:0]</obj_property>
+      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
    </wvobject>
    <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/my_inst/_a_select" type="array">
       <obj_property name="ElementShortName">_a_select[1:0]</obj_property>
@@ -119,11 +121,11 @@
    <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/my_inst/T" type="array">
       <obj_property name="ElementShortName">T[2:0]</obj_property>
       <obj_property name="ObjectShortName">T[2:0]</obj_property>
+      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
    </wvobject>
-   <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/my_inst/opcode" type="array">
-      <obj_property name="ElementShortName">opcode[6:0]</obj_property>
-      <obj_property name="ObjectShortName">opcode[6:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
+   <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/my_inst/_opcode" type="array">
+      <obj_property name="ElementShortName">_opcode[6:0]</obj_property>
+      <obj_property name="ObjectShortName">_opcode[6:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/PC" type="array">
       <obj_property name="ElementShortName">PC[31:0]</obj_property>
@@ -177,16 +179,6 @@
       <obj_property name="ElementShortName">rs2[4:0]</obj_property>
       <obj_property name="ObjectShortName">rs2[4:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/my_inst/rs1" type="array">
-      <obj_property name="ElementShortName">rs1[4:0]</obj_property>
-      <obj_property name="ObjectShortName">rs1[4:0]</obj_property>
-      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/my_inst/rs2" type="array">
-      <obj_property name="ElementShortName">rs2[4:0]</obj_property>
-      <obj_property name="ObjectShortName">rs2[4:0]</obj_property>
-      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-   </wvobject>
    <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/data_reg" type="array">
       <obj_property name="ElementShortName">data_reg[31:0]</obj_property>
       <obj_property name="ObjectShortName">data_reg[31:0]</obj_property>
@@ -198,5 +190,13 @@
    <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/alu_inst_0/_alu_flag" type="logic">
       <obj_property name="ElementShortName">_alu_flag</obj_property>
       <obj_property name="ObjectShortName">_alu_flag</obj_property>
+   </wvobject>
+   <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/my_inst/_rd" type="array">
+      <obj_property name="ElementShortName">_rd[4:0]</obj_property>
+      <obj_property name="ObjectShortName">_rd[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/design_1_simulator/design_1_i/cpu_wrapper_0/inst/cpu_inst/data_reg" type="array">
+      <obj_property name="ElementShortName">data_reg[31:0]</obj_property>
+      <obj_property name="ObjectShortName">data_reg[31:0]</obj_property>
    </wvobject>
 </wave_config>

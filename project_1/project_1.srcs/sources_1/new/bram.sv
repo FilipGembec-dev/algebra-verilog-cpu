@@ -26,7 +26,7 @@ module bram_inst(
 //        data_i[4] <= 32'h00b6c833; //xor
 //        data_i[5] <= 32'h000001797; //aui
 //        //data_i[6] <= 32'hfe7ff8ef; //jal
-//        data_i[6] <= 32'h00358567; //jalr //jalr weird select
+//        data_i[6] <= 32'h00358567; //jalr 
  //load store test
 //          data_i[0] <= 32'h00400593;
 //          data_i[1] <= 32'h00500693;
@@ -43,14 +43,29 @@ module bram_inst(
 //          data_i[6] <= 32'hfeb50ae3;
 
 //64bit integer addition
-           data_i[0] <= 32'h00300593;
-           data_i[1] <= 32'h00300613;
-           data_i[2] <= 32'h00300693;
-           data_i[3] <= 32'h00300713;
-           data_i[4] <= 32'h00c50533;
-           data_i[5] <= 32'h00d582b3;
-           data_i[6] <= 32'h00c53333;
-           data_i[7] <= 32'h006285b3;
+//           data_i[0] <= 32'h00300593;
+//           data_i[1] <= 32'h00300613;
+//           data_i[2] <= 32'h00300693;
+//           data_i[3] <= 32'h00300713;
+//           data_i[4] <= 32'h00c50533;
+//           data_i[5] <= 32'h00d582b3;
+//           data_i[6] <= 32'h00c53333;
+//           data_i[7] <= 32'h006285b3;
+
+//jal test
+//            data_i[0] <= 32'h00300513;
+//            data_i[1] <= 32'h00400593;
+//            data_i[2] <= 32'h00a586b3;
+//            data_i[3] <= 32'hff9ff06f;
+            
+//        .global _start
+//_start:
+	
+//	addi a0, zero, 0x3
+//	label:
+//	add a1, zero, 0x4
+//	add a3, a1, a0
+//	jal a4, label   
     end
     
     always@(posedge clk)begin

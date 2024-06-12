@@ -18,35 +18,33 @@ module cpu_top(
     output [3:0] we_data
     //decode instruction module
     );
-    
     //source and destination
     wire [4:0] rd, rs1, rs2;   
     //imm
     wire [31:0] imm;
-    
-    localparam c_register_file_len = 32; // rv32i has 31 general-purpose registers x1-x31, which hold integer values
     //REGFILE PC INSTREG(program register)
+    localparam c_register_file_len = 32; // rv32i has 31 general-purpose registers x1-x31, which hold integer values
     bit [31:0] REG_FILE [c_register_file_len - 1 : 0];
     reg [31:0] PC = 32'd0;
     wire [31:0] PC_plus_4 = PC + 4;
     bit [31:0] INST_REG;	
 	//setting REGFILE read registers a and b
-    reg [31:0] qa;
-	reg [31:0] qb; 
+    reg [31:0] reg_a;
+	reg [31:0] reg_b; 
 	//decode signals and registers
-	bit [31:0] a; //adder port A TODO: rename to alu_B
-	bit [31:0] b;  //adder port B TODO: rename to alu_B
-	bit [31:0] ALU_out; //adder out port
+	bit [31:0] alu_a; //ALU in port A
+	bit [31:0] alu_b;  //ALU in port B 
+	bit [31:0] ALU_out; //ALU out port
 	bit [31:0] data_reg; //register for storing data from memory/instructions
 	bit [31:0] current_PC; //save current PC
-	bit [31:0] c; //setting ALUout c register
-	wire [31:0] memory_adress = c; //adress for memory (always on)
+	bit [31:0] reg_c; //setting ALU out c register
+	wire [31:0] memory_adress = reg_c; //adress for memory (always on)
 	wire m2r_select; //memory or c
 	wire alu_flag; //for logical operations alu
     //see decode
 	wire [1:0] a_select;
 	wire [1:0] b_select;
-	wire [2:0] c_select;
+	wire [1:0] c_select;
 	wire PC_enable;
 	wire wb;
 	wire IR_enable;
@@ -55,46 +53,47 @@ module cpu_top(
 	bit [3:0]  _we_data;
 	bit [31:0] next_PC;    
 	wire [3:0] alu_operation; 	
-///////////////////////////////////////	
-//WIRE TO MULTIPLEXERS SELECT ACTIONS//
-//////////////////////////////////////
+    ///////////////////////////////////////	
+    //WIRE TO MULTIPLEXERS SELECT ACTIONS//
+    //////////////////////////////////////
 	always_comb begin
 		case (a_select)
-			2'b00: a <= qa;
-			2'b01: a <= PC;
-			2'b10: a <= current_PC;
-			default: a <= 32'b0;
+			2'b00: alu_a <= reg_a;
+			2'b01: alu_a <= PC;
+			2'b10: alu_a <= current_PC;
+			default: alu_a <= 32'b0;
 		endcase
 		
 		case (b_select)
-			2'b00: b <= qb;
-			2'b01: b <= imm;
-			default: b <= qb;		
+			2'b00: alu_b <= reg_b;
+			2'b01: alu_b <= imm;
+			default: alu_b <= reg_b;		
 		endcase
 		  	
 		case (next_PC_select)
 		  2'b00: next_PC <= PC_plus_4;
 		  2'b01: next_PC <= ALU_out;
-		  2'b10: next_PC <= c; 
+		  2'b10: next_PC <= reg_c; 
 		  default: next_PC <= PC_plus_4;	
 		endcase
 	end
 
-//////////////////////////////////////////////////////	
-//WIRES AND MULTIPLEXERS TO REGISTERS SELECT ACTIONS//
-/////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////	
+    //WIRES AND MULTIPLEXERS TO REGISTERS SELECT ACTIONS//
+    /////////////////////////////////////////////////////
 	always@(posedge aclk)begin
 	   if (aresetn)begin
-            qa <= (rs1==0) ? 0 : REG_FILE[rs1]; //loads into qa register (need to change name)
-            qb <= (rs2==0) ? 0 : REG_FILE[rs2]; //loads into qb register (need to change name)
-            data_reg <= data_in_data;            
+	       //prepare regfile reg_a and reg_b for operations when there is adress
+           reg_a <= (rs1==0) ? 0 : REG_FILE[rs1]; 
+           reg_b <= (rs2==0) ? 0 : REG_FILE[rs2];
+           //prepare data_reg when theres address
+           data_reg <= data_in_data;            
              
             case (c_select)
-                3'b000: c <= REG_FILE[rs1];
-                3'b001: c <= ALU_out;
-                3'b010: c <= PC;
-                3'b011:	c <= imm;
-                3'b100: c <= PC_plus_4;		
+                2'b00: reg_c <= REG_FILE[rs1];
+                2'b01: reg_c <= ALU_out;
+                2'b10: reg_c <= PC;
+                2'b11: reg_c <= imm;		
             endcase
             
             case (PC_enable)
@@ -104,9 +103,7 @@ module cpu_top(
        
             case (wb)
                 1'b0: ;
-                1'b1: begin 
-                 REG_FILE[rd] <= m2r_select ? c : data_reg;
-                 end
+                1'b1: REG_FILE[rd] <= m2r_select ? data_reg : reg_c;
             endcase
             
             case (IR_enable)
@@ -126,7 +123,7 @@ module cpu_top(
 	end
     
     //net assigments
-    assign data_out_data = qb; // for store
+    assign data_out_data = reg_b; // for store
     assign addr_data = memory_adress; //c is memory adress
     assign addr_inst = PC[31:2]; //use word adress to read memory
 	assign REG_FILE[0] = 32'h00; //register x0 is hardwired to the constant
@@ -141,6 +138,6 @@ module cpu_top(
      .a_select,.b_select,.c_select,.next_PC_select, .wb, .alu_flag, .IR_enable, .PC_enable, .current_PC_enable, .m2r_select, ._we_data, .aresetn
      );
     
-     alu alu_inst_0(.a_i(a), .b_i(b), .c_o(ALU_out), .alu_operation(alu_operation), .alu_flag(alu_flag));
+     alu alu_inst_0(.a_i(alu_a), .b_i(alu_b), .c_o(ALU_out), .alu_operation(alu_operation), .alu_flag(alu_flag));
 	
 endmodule
