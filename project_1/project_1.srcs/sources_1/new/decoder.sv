@@ -267,7 +267,7 @@ module inst_decode(
                         _PC_enable <= 1'b0; // PC not enabled
                         _next_PC_select <= 2'b00; //redirect alu_out to pc
                         _c_select <= 3'b000; // save jump adress to registar c
-                        _wb <= 0;
+                        _wb <= 1'b0;
                         _current_PC_enable <= 1'b0;
                         _IR_enable <= 1'b0;
                         we_data <= 4'b0000; 
@@ -303,7 +303,7 @@ module inst_decode(
             DECODE:begin
                 case(_opcode)
                     7'b0010011:begin next_state <= (_rd == 5'b00000) ?  EXECUTE : WRITE_BACK; end //jal
-                    7'b0110011:next_state <= EXECUTE; //reg
+             -
                     7'b0110111: next_state <= WRITE_BACK; //lui                     
                     7'b0010111: next_state <= WRITE_BACK; //aui                           
                     7'b1110011: ; //csr
