@@ -11,7 +11,7 @@ module alu(
     bit _alu_flag;
 
     always_comb begin
-        //remove latch
+        //default operations
         _c_o <= 0; _alu_flag <= 0;
         case (alu_operation)
              4'b0000:  _c_o <= a_i + b_i; 
@@ -25,8 +25,7 @@ module alu(
              4'b0111:begin _c_o <= a_i | b_i; _alu_flag <= a_i || b_i; end
              4'b1000: begin _c_o <= a_i & b_i; _alu_flag <= a_i && b_i; end //and 
              default:begin _c_o <= 0; _alu_flag <= 0; end
-          endcase   
-//        end             
+          endcase               
     end
     
     assign c_o = _c_o;

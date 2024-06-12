@@ -13,8 +13,8 @@
     "design_tree": {
       "clk_wiz_0": "",
       "rst_clk_wiz_0_100M": "",
-      "blk_mem_gen_0": "",
-      "cpu_wrapper_0": ""
+      "cpu_wrapper_0": "",
+      "bram_inst_0": ""
     },
     "ports": {
       "sys_clock": {
@@ -104,51 +104,6 @@
           },
           "C_NUM_BUS_RST": {
             "value": "1"
-          }
-        }
-      },
-      "blk_mem_gen_0": {
-        "vlnv": "xilinx.com:ip:blk_mem_gen:8.4",
-        "ip_revision": "7",
-        "xci_name": "design_1_blk_mem_gen_0_0",
-        "xci_path": "ip\\design_1_blk_mem_gen_0_0\\design_1_blk_mem_gen_0_0.xci",
-        "inst_hier_path": "blk_mem_gen_0",
-        "parameters": {
-          "Assume_Synchronous_Clk": {
-            "value": "false"
-          },
-          "Coe_File": {
-            "value": "../../../../new/cpu_mem.mem"
-          },
-          "EN_SAFETY_CKT": {
-            "value": "true"
-          },
-          "Enable_32bit_Address": {
-            "value": "true"
-          },
-          "Enable_A": {
-            "value": "Always_Enabled"
-          },
-          "Fill_Remaining_Memory_Locations": {
-            "value": "true"
-          },
-          "Load_Init_File": {
-            "value": "true"
-          },
-          "Memory_Type": {
-            "value": "True_Dual_Port_RAM"
-          },
-          "Register_PortA_Output_of_Memory_Primitives": {
-            "value": "false"
-          },
-          "Register_PortB_Output_of_Memory_Primitives": {
-            "value": "false"
-          },
-          "Write_Depth_A": {
-            "value": "16000"
-          },
-          "use_bram_block": {
-            "value": "Stand_Alone"
           }
         }
       },
@@ -243,18 +198,90 @@
             "right": "0"
           }
         }
+      },
+      "bram_inst_0": {
+        "vlnv": "xilinx.com:module_ref:bram_inst:1.0",
+        "ip_revision": "1",
+        "xci_name": "design_1_bram_inst_0_0",
+        "xci_path": "ip\\design_1_bram_inst_0_0\\design_1_bram_inst_0_0.xci",
+        "inst_hier_path": "bram_inst_0",
+        "reference_info": {
+          "ref_type": "hdl",
+          "ref_name": "bram_inst",
+          "boundary_crc": "0x0"
+        },
+        "ports": {
+          "clk": {
+            "type": "clk",
+            "direction": "I",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "/clk_wiz_0_clk_out1",
+                "value_src": "ip_prop"
+              }
+            }
+          },
+          "we_i": {
+            "direction": "I",
+            "left": "3",
+            "right": "0"
+          },
+          "data_in_i": {
+            "direction": "I",
+            "left": "31",
+            "right": "0"
+          },
+          "addr_i": {
+            "direction": "I",
+            "left": "31",
+            "right": "0"
+          },
+          "data_out_i": {
+            "direction": "O",
+            "left": "31",
+            "right": "0"
+          },
+          "we_m": {
+            "direction": "I",
+            "left": "3",
+            "right": "0"
+          },
+          "data_in_m": {
+            "direction": "I",
+            "left": "31",
+            "right": "0"
+          },
+          "addr_m": {
+            "direction": "I",
+            "left": "31",
+            "right": "0"
+          },
+          "data_out_m": {
+            "direction": "O",
+            "left": "31",
+            "right": "0"
+          }
+        }
       }
     },
     "nets": {
-      "blk_mem_gen_0_douta": {
+      "bram_inst_0_data_out_i": {
         "ports": [
-          "blk_mem_gen_0/douta",
+          "bram_inst_0/data_out_i",
           "cpu_wrapper_0/data_in_inst"
         ]
       },
-      "blk_mem_gen_0_doutb": {
+      "bram_inst_0_data_out_m": {
         "ports": [
-          "blk_mem_gen_0/doutb",
+          "bram_inst_0/data_out_m",
           "cpu_wrapper_0/data_in_data"
         ]
       },
@@ -262,9 +289,8 @@
         "ports": [
           "clk_wiz_0/clk_out1",
           "rst_clk_wiz_0_100M/slowest_sync_clk",
-          "blk_mem_gen_0/clka",
-          "blk_mem_gen_0/clkb",
-          "cpu_wrapper_0/aclk"
+          "cpu_wrapper_0/aclk",
+          "bram_inst_0/clk"
         ]
       },
       "clk_wiz_0_locked": {
@@ -276,43 +302,31 @@
       "cpu_wrapper_0_addr_data": {
         "ports": [
           "cpu_wrapper_0/addr_data",
-          "blk_mem_gen_0/addrb"
+          "bram_inst_0/addr_m"
         ]
       },
       "cpu_wrapper_0_addr_inst": {
         "ports": [
           "cpu_wrapper_0/addr_inst",
-          "blk_mem_gen_0/addra"
+          "bram_inst_0/addr_i"
         ]
       },
       "cpu_wrapper_0_data_out_data": {
         "ports": [
           "cpu_wrapper_0/data_out_data",
-          "blk_mem_gen_0/dinb"
+          "bram_inst_0/data_in_m"
         ]
       },
       "cpu_wrapper_0_data_out_inst": {
         "ports": [
           "cpu_wrapper_0/data_out_inst",
-          "blk_mem_gen_0/dina"
-        ]
-      },
-      "cpu_wrapper_0_en_data": {
-        "ports": [
-          "cpu_wrapper_0/en_data",
-          "blk_mem_gen_0/enb"
+          "bram_inst_0/data_in_i"
         ]
       },
       "cpu_wrapper_0_we_data": {
         "ports": [
           "cpu_wrapper_0/we_data",
-          "blk_mem_gen_0/web"
-        ]
-      },
-      "cpu_wrapper_0_we_inst": {
-        "ports": [
-          "cpu_wrapper_0/we_inst",
-          "blk_mem_gen_0/wea"
+          "bram_inst_0/we_m"
         ]
       },
       "reset_1": {
@@ -323,16 +337,9 @@
           "rst_clk_wiz_0_100M/aux_reset_in"
         ]
       },
-      "rst_clk_wiz_0_100M_bus_struct_reset": {
+      "rst_clk_wiz_0_100M_interconnect_aresetn": {
         "ports": [
-          "rst_clk_wiz_0_100M/bus_struct_reset",
-          "blk_mem_gen_0/rsta",
-          "blk_mem_gen_0/rstb"
-        ]
-      },
-      "rst_clk_wiz_0_100M_peripheral_aresetn": {
-        "ports": [
-          "rst_clk_wiz_0_100M/peripheral_aresetn",
+          "rst_clk_wiz_0_100M/interconnect_aresetn",
           "cpu_wrapper_0/aresetn"
         ]
       },

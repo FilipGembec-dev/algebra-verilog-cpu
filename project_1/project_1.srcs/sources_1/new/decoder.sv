@@ -8,33 +8,41 @@ module inst_decode(
     output [4:0] rd, rs1, rs2,
     output [31:0] imm,
     output [3:0] alu_operation,
-    output[6:0] opcode,
     output [1:0] a_select,
     output [1:0] b_select,
-    output [1:0] c_select, //regfile select (it can be interpeted as ALU_out select need to refactor)
+    output [1:0] c_select, 
     output [1:0] next_PC_select,
-    output PC_enable, //regfile select
+    output PC_enable, 
     output IR_enable,
     output wb,
     output current_PC_enable,
-    output m2r_select, //select adress from rd(reg destination, 0) or c(memory destination, 1)
+    output m2r_select,
     output [3:0] _we_data
-    
     );
+    //areset zero is low impendence
+    bit areset;
+  
+    //STATES TODO: onehotencoding
     localparam FETCH = 3'b000;
     localparam DECODE = 3'b001;
     localparam EXECUTE = 3'b010;
     localparam MEMORY = 3'b011;
     localparam WRITE_BACK = 3'b100;
-    
-    //typedef enum bit [2:0] {FETCH,DECODE,EXECUTE,MEMORY,WRITE_BACK} e_states;
-//    typedef enum bit [31:0] {ADDI = 32'h1, SLTI = 32'h2, ANDI = 32'h4, ORI = 32'h8, XORI = 32'h10, LUI = 32'h20, AUIPC = 32'h40, SLLI = 32'h80, SRLI = 32'h100,
-//                             SRAI = 32'h200, ADD = 32'h400, SUB = 32'h800,_XOR = 32'h1000, _OR = 32'h2000, _AND = 32'h4000, SLL = 32'h8000, SRL = 32'h10000,
-//                             SLT = 32'h20000, LB = 32'h40000, LH = 32'h80000, LW = 32'h100000, SB = 32'h200000, SH = 32'h400000, SW = 32'h800000,
-//                             JAL = 32'h1000000, JALR = 32'h2000000, BEQ = 32'h4000000 ,BEN = 32'h8000000, BLT = 32'h10000000, BGE = 32'h20000000, 
-//	                         BLTU = 32'h40000000, BGEU = 32'h80000000} e_operations;
-    
-    //R-type instruction parts decoder
+      
+//////////////////////////////////////////////////////////////////    
+//INSTRUCTION OPERATION CODES:                                  //  
+//Integer Register-Immediate Instructions opcode == 7'b0010011  //    
+//Integer Register-Register Operations opcode == 7'b0110011     //
+//Load upper-immediate opcode == 7'b0110111                     //
+//Add upper-immediate to pc opcode == 7'b0010011                //
+//Csr_opcode == 7'b1110011 //not implented                      //
+//Conditional Branches opcode == 7'b1100011                     //
+//Load instructions opcode == 7'b0000011                        //
+//Store instructions opcode == 7'b0100011                       //
+//Jump and link register opcode == 7'b1100111                   //
+//Jump and link opcode == 7'b1101111                            //
+//////////////////////////////////////////////////////////////////
+    //R-type instruction part decode
     wire [6:0] _opcode = INST_REG [6:0];
     wire [4:0] _rd = INST_REG [11:7];
     wire [2:0] _funct3 = INST_REG [14:12];
@@ -42,64 +50,60 @@ module inst_decode(
     wire [4:0] _rs2 = INST_REG [24:20];
     wire [6:0] _funct7 = INST_REG [31:25];
     
+    //state machine data
     bit [2:0] next_state;
-// instruction format decode
-//    Integer Register-Immediate Instructions (I-type operations)
-//    wire imm_alu_op = (opcode == 7'b0010011); 
-//    //Integer Register-Register Operations
-//    wire reg_alu_op = (opcode == 7'b0110011); 
-//    //lui aui
-//    wire lui = (opcode == 7'b0110111);
-//    wire aui = (opcode == 7'b0010011);
-//    //interupts 
-//	wire csr_op = (opcode == 7'b1110011);
-//    //Conditional branches
-//    wire branch_op = (opcode == 7'b1100011);
-//    //Load and store instructions
-//    wire load_op = (opcode == 7'b0000011);
-//    wire store_op = (opcode == 7'b0100011);
-//    wire jalr_op = (opcode == 7'b1100111);
-//    wire _jal_op = (opcode == 7'b1101111); //needed
-//    wire srrli = (opcode == 7'b0010011);
     bit[2:0] T = 0;
-    bit [1:0] _a_select; //select a_alu_input (reg a, PC, current_PC) 
-    bit [1:0] _b_select; //select b_alu_input (reg b, imm)
-    bit [1:0] _c_select; //select for c reg file (ALU_out, imm, REGFILE[rs1], PC)
+    
+    //ALU input selector 
+    bit [1:0] _a_select; //ALU input a selector (reg a, PC, current_PC) 
+    bit [1:0] _b_select; //ALU input a selector (reg b, imm)
+    
+    //ALU output selector 
+    bit [1:0] _c_select; //ALU output mux (ALU_out, imm, REGFILE[rs1], PC)
+    
+    //Program counter selectors and enable
     bit [1:0] _next_PC_select; //select next PC output (PC+4, ALU_out, c, PC)
     bit _PC_enable; //enable write to pc
-    bit _IR_enable; //enable write to instruction register
-    bit _wb; //enable write to regfile
     bit _current_PC_enable; //current pc enable
-    bit areset;
-    bit [3:0] _alu_operation;
+    bit _IR_enable; //enable write to instruction register
+    
+    //REGFILE data
+    bit _wb; //enable write to regfile
     bit _m2r_select; //memory to register
-    bit we_data;
     
+    bit [3:0] _alu_operation; //ALU selector signals
     
+    bit [3:0] we_data; //enable for memory
    
-    //immideate multiplexer
-    bit [31:0] _imm;
+    bit [31:0] _imm; //immideate selector
     
-    //combinational for choosing immidiate and alu_ops
     always_comb begin
-        //imm select
+        ////////////////////////////////////////    
+        //Immediate decode according to opcode//
+        ///////////////////////////////////////
         case(_opcode)
             7'b0100011: _imm <= {{20{INST_REG[31]}}, INST_REG[31:25], INST_REG[11:7]}; //S type store
             7'b1100011: _imm <= {{20{INST_REG[31]}}, INST_REG[31:25], INST_REG[11:8], 1'b0}; //B type branch
             7'b0010011: _imm <= {{20{INST_REG[31]}}, {INST_REG[31:20]}}; //I type (imm_alu_op or load or jalr)
             7'b1100111: _imm <= {{20{INST_REG[31]}}, {INST_REG[31:20]}}; //I type (imm_alu_op or load or jalr)
             7'b0000011: _imm <= {{20{INST_REG[31]}}, {INST_REG[31:20]}}; //I type (imm_alu_op or load or jalr)
-            7'b0110111 , 7'b0010011: _imm <=  {{INST_REG[31:12]}, {12'b000000000000}}; //U type (LUI or AUI)
+            7'b0110111:  _imm <=  {{INST_REG[31:12]}, {12'b000000000000}}; //U type (LUI or AUI)
+            7'b0010111: _imm <=  {{INST_REG[31:12]}, {12'b000000000000}}; //U type (LUI or AUI)
             7'b1101111: _imm <= {{12{INST_REG[31]}}, INST_REG[19:12], INST_REG[20], INST_REG[30:25], INST_REG[24:21], 1'b0}; // j type jal
             7'b1110011, 7'b0110011: _imm <= 7'b0; // r type (csr, reg_alu_op)
             default: _imm <= 7'b0;           
         endcase
-        
-        //ALU operation select (without fetch)  
-        case(_opcode) //prebacit u alu
-            7'b1100011:begin //branch
+        ///////////////////////////////////////////////////        
+        //ALU selector data according to 'func3', 'func7'//
+        /////////////////////////////////////////////////// 
+        /*
+        NOTE FOR FUTURE UPGRADE: in case of pipeline needs to be updated since control transfer instructions require their own adder
+        TODO: add to all conditional branch instructions (T == DECODE) ? 4'b0000 : 4'b????; 
+        */
+        case(_opcode)
+            7'b1100011:begin //If conditional branch instructions
                  case (_funct3)
-                     3'b000: _alu_operation <= 4'b1000; // equale
+                     3'b000: _alu_operation <= (T == DECODE) ? 4'b0000 : 4'b1000; // equale (if state is decode select addition for calculating address)
                      3'b001: _alu_operation <= 4'b1001; //not equale
                      3'b100: _alu_operation <= 4'b0011; //less
                      3'b101: _alu_operation <= 4'b1010; //greater
@@ -108,15 +112,15 @@ module inst_decode(
                      default: _alu_operation <= 4'b0000;       
                  endcase
             end   
-            7'b1101111: _alu_operation <= 4'b0000; // jal (this is diffrent in pipelined)
-            7'b0110011, 7'b0010011: begin // r type
+            7'b1101111: _alu_operation <= 4'b0000; // jal instructions special case
+            7'b0110011, 7'b0010011: begin // all other instructions (excluding control transfer instructions)
                  case (_funct3)
                      3'b000: _alu_operation <= _funct7[5] ? 4'b0001 : 4'b0000; // add / sub
                      3'b001: _alu_operation <= 4'b0010; //shiftleft
                      3'b010: _alu_operation <= 4'b0011; // lessthen
                      3'b011: _alu_operation <= 4'b1011;  //sltu
                      3'b100: _alu_operation <= 4'b0100; //xor
-                     3'b101: _alu_operation <= funct7 ? 4'b0101 : 4'b0110; //srl / sra
+                     3'b101: _alu_operation <= _funct7 ? 4'b0101 : 4'b0110; //srl / sra
                      3'b110: _alu_operation <=  4'b0111;//or
                      3'b111: _alu_operation <=  4'b1000; //and 
                      default: _alu_operation <= 4'b0000;        
@@ -124,97 +128,82 @@ module inst_decode(
             end
             default: _alu_operation <= 4'b0000; 
         endcase
-        
-             //defult cases for operations 
-        _a_select <= 2'b10; //PC
-        _b_select <= 2'b10; //constant 4
-        _PC_enable <= 1'b1; // PC <= ALU_out 
-        _next_PC_select <= 2'b01; //redirect alu_out to pc
+        //////////////////
+        //SELECT SIGNALS//
+        //////////////////
+        /*
+        SELECT SIGNALS:
+        _a_select (reg a, PC, current_PC) 
+        _b_select (reg b, imm) 
+        _PC_enable (off, on)
+        _next_PC_select (PC+4, ALU_out, c, PC)
+        _IR_enable (off, on)
+        _c_select (ALU_out, imm, REGFILE[rs1], PC)
+        _wb (off, on)
+         _current_PC_enable (off, on) 
+        _m2r_select ( from reg c , from memory)
+        we_data (off, on)
+        _c_enable (off, on) ???
+         
+        NOTES FOR SELECT SIGNALS:
+        - IMPORTANTE qa <= regfile[rs1] and qa <= regfile[rs2] is always on (no select signal)
+        - some pseudo instructions could be faster for one cycles 
+        - does c signal really need to be 2 bit?
+        - c enable cant remamber if its esssential
+        - I overdone it with defaults cause I keeep getting bugs, now that it is bug free unnecessery defaults should be removed
+        - IMPORTANTE store halfword and byte is not done
+        - IMPORTANTE tested all opcodes, but not individual instructions (in theory should work)
+        - IMPORTANTE program counter has its own adder (while debugging branch instructions found out to be simpler solution)
+        */              
+        //default cases for operations 
+        _a_select <= 2'b00; 
+        _b_select <= 2'b00; 
+        _PC_enable <= 1'b0; 
+        _next_PC_select <= 2'b00; 
         _IR_enable <= 1'b0;
-        _c_select <= 2'b10; // save jump adress to registar c   
+        _c_select <= 2'b00; 
         _wb <= 1'b0;
-        _current_PC_enable <= 1'b1; 
+        _current_PC_enable <= 1'b0; 
         _m2r_select <= 1'b0;
-        we_data <= 4'b0000;      
+        we_data <= 4'b0000;  
         
-        //
         case(T)
             FETCH:begin
                 _IR_enable <= 1'b1;
                 _PC_enable <= 1'b1; //select PC <= next_PC regtype
                 _next_PC_select <= 2'b00; // pc <= pc_plus_4
-                _current_PC_enable <= 1'b1;
-                _a_select <= 2'b00; //PC
-                _b_select <= 2'b01; //imm
-                _c_select <= 2'b10; // save jump adress to registar c
-                _m2r_select <= 1'b0;
-                we_data <= 4'b0000;  
+                _current_PC_enable <= 1'b1; //on
             end
             DECODE:begin
                 case(_opcode)
-                    7'b0010011:begin  //imm
-                        _b_select <= 2'b01; //imm
-                        _a_select <= 2'b00; // 0
-                        _PC_enable <= 1'b0; //no nextPC select
-                        _c_select <= 2'b00; //REG_FILE[rs] //reg file  for pseudo mv ,goes to writeback if rs = 0 TODO
-                        _next_PC_select <= 2'b00; // pc <= pc_plus_4
-                        //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
-                    end
-                    7'b0110011:begin //reg
-                        _a_select <= 2'b00;
-                        _b_select <= 2'b00;
-                        _PC_enable <= 1'b0; //no nextPC select
-                        _next_PC_select <= 2'b00; // pc <= pc_plus_4
-                        //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
-                    end
-                    7'b0110111: begin //lui
-                        _PC_enable <= 1'b0; //no nextPC select
-                        _c_select <= 2'b11; //immmediate regtype
-                        _next_PC_select <= 2'b00; // pc <= pc_plus_4
-                    end
-                    7'b0010011:begin //aui
+                    7'b0010011:_c_select <= 2'b11; //imm - c <= imm - signal 
+                    7'b0110111: _c_select <= 2'b11; //lui - c <= imm - signal;
+                    7'b0010111:begin //aui
                         _a_select <= 2'b10; //current_PC
                         _b_select <= 2'b01; //imm
-                        _next_PC_select <= 2'b01; //redirect alu_out to pc
-                        _PC_enable <= 1'b1; // write enable to pc (PC <= ALU_out)       
+                        _c_select <= 3'b01; //write to c       
                     end
-                    7'b1110011: ; //csr
                     7'b1100011:begin //branch
-                        _a_select <= 2'b00; //PC
+                        _a_select <= 2'b01; //PC
                         _b_select <= 2'b01; //imm
-                        _c_select <= 2'b10; // save jump adress to registar c
-                        _PC_enable = 1'b0;
-                        _next_PC_select <= 2'b00; // pc <= pc_plus_4       
+                        _c_select <= 2'b01; // save jump adress to registar c       
                     end
-                    7'b0000011: begin  //imm
-                        _b_select <= 2'b01; //imm
-                        _a_select <= 2'b01;
-                        _PC_enable <= 1'b0; //no nextPC select
-                        _c_select <= 2'b00; //REG_FILE[rs] //reg file  for pseudo mv ,goes to writeback if rs = 0 TODO
-                        _next_PC_select <= 2'b00; // pc <= pc_plus_4
-                        //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
-                    end //load //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
-                    7'b0100011: _PC_enable <= 1'b0; //store //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly
-                    //jalr
-                    7'b1100111: ;  //qa <= regfile[rs1] and qa <= regfile[rs2] is done regardlessly //jalr
-                    7'b1101111: begin //jal
-                       _a_select <= 2'b00; //PC
+                    7'b1101111: begin //jal 
+                       _a_select <= 2'b10; //current_PC
                        _b_select <= 2'b01; //imm
-                       _c_select <= 2'b10; // save jump adress to registar c
+                       _c_select <= 3'b010; // save PC to registar c
                        _next_PC_select <= 2'b01; //redirect alu_out to pc
                        _PC_enable <= 1'b1; 
                     end 
-                    7'b0010011: ; //sssrli // b = rs2 TODO
                     default:begin
-                        _a_select <= 2'b00; //PC
-                        _b_select <= 2'b10; //constant 4
-                        _PC_enable <= 1'b1; // PC <= ALU_out 
-                        _next_PC_select <= 2'b00; //redirect alu_out to pc
-                        _c_select <= 2'b10; // save jump adress to registar c
+                        _a_select <= 2'b00; 
+                        _b_select <= 2'b00; 
+                        _PC_enable <= 1'b0; 
+                        _next_PC_select <= 2'b00; 
+                        _c_select <= 2'b00; 
                         _wb <= 0;
                         _current_PC_enable <= 1'b0;
                         _IR_enable <= 1'b0;
-                        _m2r_select <= 1'b0;
                         we_data <= 4'b0000;  
                     end    
                  endcase
@@ -225,49 +214,43 @@ module inst_decode(
                         _a_select <= 2'b00; //qa
                         _b_select <= 2'b01; //imm
                         _c_select <= 2'b01; // write to c
-                        _PC_enable <= 1'b0;
                      end
                     7'b0110011:begin //reg
                         _a_select <= 2'b00; //qa
                         _b_select <= 2'b00; //qb
                         _c_select <= 2'b01; //write to c
-                        _PC_enable <= 1'b0;
                     end
-//                    7'b1110011: ; //csr
                     7'b1100011:begin //branch
-                        _a_select <= 2'b01; //qa
+                        _a_select <= 2'b00; //qa
                         _b_select <= 2'b00; //qb
                         _next_PC_select <= 2'b10; //redirect c to pc
-                        _PC_enable <= alu_flag ? 1'b0 : 1'b1;       
+                        _PC_enable <= alu_flag ? 1'b1 : 1'b0;       
                     end
                     7'b0000011:begin //load
-                        _a_select <= 2'b01; //qa
+                        _a_select <= 2'b00; //qa
                         _b_select <= 2'b01; //imm
-                        _PC_enable <= 1'b0;
                         _c_select <= 2'b01;     
                         _m2r_select <= 1'b0;                    
                     end
                     7'b0100011:begin  //store
-                        _a_select <= 2'b01; //qa
+                        _a_select <= 2'b00; //qa
                         _b_select <= 2'b01; //imm
-                        _PC_enable <= 1'b0;
                         _c_select <= 2'b01;
                         _m2r_select <= 1'b0;    
                     end
-                    7'b1100111: begin  //jalr
-                       _a_select = 2'b01; //qa
-                       _b_select = 2'b01; //imm
-                       _c_select = 2'b01; //write ALU_out to c (set to zero if rd = 0 ???)
-                       _next_PC_select <= 2'b01; //redirect alu_out to pc
-                       _PC_enable <= 1'b1; // enable write to pc
+                    7'b1100111:begin  //jalr
+                        _a_select <= 2'b00; //qa
+                        _b_select <= 2'b01; //imm
+                        _c_select <= 2'b10; //c <= PC (following pc)
+                        _next_PC_select <= 2'b01; //redirect alu_out to pc
+                        _PC_enable <= 1'b1; // enable write to pc
                     end    
-                    7'b0010011: ; //sssrli // b = rs2 TODO
                     default:begin
-                        _a_select <= 2'b01; //qa
-                        _b_select <= 2'b10; //constant 4
-                        _PC_enable <= 1'b0; // PC <= ALU_out 
-                        _next_PC_select <= 2'b00; //redirect alu_out to pc
-                        _c_select <= 2'b10; // save jump adress to registar c
+                        _a_select <= 2'b00; 
+                        _b_select <= 2'b00; 
+                        _PC_enable <= 1'b0; 
+                        _next_PC_select <= 2'b00; 
+                        _c_select <= 2'b00; 
                         _wb <= 0;
                         _current_PC_enable <= 1'b0;
                         _IR_enable <= 1'b0;
@@ -275,21 +258,15 @@ module inst_decode(
                     end    
                 endcase 
              end
-             MEMORY:begin
-                  
+             MEMORY:begin                  
                case(_opcode)
-                    7'b0000011:begin _m2r_select <= 1'b0; _PC_enable <= 1'b0; end //load 
-                    7'b0100011:begin //store
-                        _PC_enable <= 1'b0;
-                        we_data <= 4'b1111;
-						_m2r_select <= 1'b0;		
-                    end    
+                    7'b0100011: we_data <= 4'b1111; //store   
                     default:begin
-                        _a_select <= 2'b00; //PC
+                        _a_select <= 2'b00; //qa
                         _b_select <= 2'b10; //constant 4
                         _PC_enable <= 1'b0; // PC not enabled
                         _next_PC_select <= 2'b00; //redirect alu_out to pc
-                        _c_select <= 2'b10; // save jump adress to registar c
+                        _c_select <= 3'b000; // save jump adress to registar c
                         _wb <= 0;
                         _current_PC_enable <= 1'b0;
                         _IR_enable <= 1'b0;
@@ -298,122 +275,87 @@ module inst_decode(
                endcase 
              end
              WRITE_BACK:begin
-                 we_data <= 4'b0000;   
-                 _wb <= 1'b1;
-                 _PC_enable <= 1'b0;
-                 _current_PC_enable <= 1'b0; 
-                 if (_opcode == 7'b0000011) _m2r_select <= 1'b0;  //load TODO
-                 else _m2r_select <= 1'b1;   
-             end              
+                     _a_select <= 2'b00;
+                     _b_select <= 2'b00;
+                     we_data <= 4'b0000;   
+                     _wb <= 1'b1;
+                     _PC_enable <= 1'b0;
+                     _current_PC_enable <= 1'b0; 
+                 if (_opcode == 7'b0000011)begin 
+                    _m2r_select <= 1'b1; 
+                 end else begin
+                    _m2r_select <= 1'b0;
+                 end   
+             end       
         endcase
-    
-    
-    
-    
-        
-    next_state <= FETCH; 
-   ///state machine
+        /////////////////   
+        //state machine//
+        /////////////////
+        /*
+        NOTES ON STATE MACHINE:
+        - during debugging this proved as best method for statemachine (seperate case statements from mux and enable signals)
+        - should be put in seperate module 
+        */
+        //default states           
+        next_state <= FETCH; //set default state
         case(T)
-                FETCH:begin
-                    next_state <= DECODE;
-                end
-                DECODE:begin
-                    case(_opcode)
-                        7'b0010011:begin  //imm
-                           next_state <= EXECUTE;
-                        end
-                        7'b0110011:begin //reg
-                            next_state <= EXECUTE;
-                        end
-                        7'b0110111: begin //lui
-                            next_state <= WRITE_BACK;
-                        end
-                        7'b0010011:begin //aui
-                           next_state <= FETCH;     
-                        end
-                        7'b1110011: ; //csr
-                        7'b1100011:begin //branch
-                            next_state <= EXECUTE;      
-                        end
-                        7'b0000011: next_state <= EXECUTE; //load
-                        7'b0100011: next_state <= EXECUTE; //store
-                        7'b1100111: next_state <= EXECUTE; //jalr
-                        7'b1101111: begin //jal
-                           next_state <= (_rd == 0) ?  WRITE_BACK : FETCH; //pseudo  jump
-                        end 
-                        7'b0010011: next_state <= EXECUTE ; //sssrli // b = rs2 TODO
-                        default:begin
-                            next_state <= EXECUTE;
-                        end    
-                     endcase
-                end         
-                EXECUTE:begin    
-                    case(_opcode)
-                        7'b0010011:begin  //imm
-                            next_state <= WRITE_BACK;
-                         end
-                        7'b0110011:begin //reg
-                            next_state <= WRITE_BACK;
-                        end
-                        7'b1100011:begin //branch
-                            next_state <= FETCH;       
-                        end
-                        7'b0000011: next_state <= WRITE_BACK; //load
-                        7'b0100011: next_state <= MEMORY; //store
-                        7'b1100111: begin  //jalr
-                           next_state <= (_rd == 0) ? WRITE_BACK : FETCH;
-                        end    
-                        default:begin
-                            next_state <= WRITE_BACK;
-                        end   
-                    endcase 
-                 end
-                 MEMORY:begin    
-                    case(_opcode)
-                        7'b0000011: next_state <= WRITE_BACK; //load 
-                        7'b0100011: next_state <= FETCH; //store
-                        default:begin
-                            next_state <= FETCH;
-                        end   
-                    endcase 
-                 end
-                 WRITE_BACK:begin    
-                   next_state <= FETCH;
-                 end                  
-            endcase
-         
-     end
+            FETCH: next_state <= DECODE;
+            DECODE:begin
+                case(_opcode)
+                    7'b0010011:begin next_state <= (_rd == 5'b00000) ?  EXECUTE : WRITE_BACK; end //jal
+                    7'b0110011:next_state <= EXECUTE; //reg
+                    7'b0110111: next_state <= WRITE_BACK; //lui                     
+                    7'b0010111: next_state <= WRITE_BACK; //aui                           
+                    7'b1110011: ; //csr
+                    7'b1100011:next_state <= EXECUTE; //branch      
+                    7'b0000011: next_state <= EXECUTE; //load
+                    7'b0100011: next_state <= EXECUTE; //store
+                    7'b1100111: next_state <= EXECUTE; //jalr
+                    7'b1101111: begin next_state <= (_rs1 == 5'b00000) ?  FETCH : WRITE_BACK; end //jal
+                    default: next_state <= FETCH;    
+                 endcase
+            end         
+            EXECUTE:begin    
+                case(_opcode)
+                    7'b0010011: next_state <= WRITE_BACK;  //imm
+                    7'b0110011: next_state <= WRITE_BACK; //reg                        
+                    7'b1100011: next_state <= FETCH; //branch                               
+                    7'b0000011: next_state <= MEMORY; //load
+                    7'b0100011: next_state <= MEMORY; //store
+                    7'b1100111: next_state <= WRITE_BACK; //jalr
+                    default:next_state <= WRITE_BACK;                               
+                endcase 
+            end
+            MEMORY:begin    
+                case(_opcode)
+                    7'b0000011: next_state <= WRITE_BACK; //load 
+                    7'b0100011: next_state <= FETCH; //store
+                    default: next_state <= FETCH;
+                 endcase 
+            end
+            WRITE_BACK: next_state <= FETCH;  
+        endcase     
+    end
      
     always@(posedge aclk)begin
         if (aresetn) T <= next_state;
         else T <= 0;
     end                    
-    
+    ///////////////////
+    //NET ASSIGNMENTS//
+    //////////////////
+    //destination and source   
     assign rd = _rd;
     assign rs1 = _rs1;
     assign rs2 = _rs2;
-
-//    assign jump_ops = _jump_ops;
     
-    assign funct3 = _funct3;
-    assign funct7 = _funct7[5];
-     
-    assign imm = _imm;
-    
-//    assign jal_op = _jal_op;
-    
-    assign alu_operation = _alu_operation;
-    
-//    assign _T = T;   
-    
-//    assign a_select = _a_select;                     
-    
-    assign opcode = _opcode;
-    
+    assign imm = _imm; //immediate
+    assign alu_operation = _alu_operation; //ALU operation
+    //select signals
     assign a_select = _a_select;
     assign b_select = _b_select;
-    assign c_select = _c_select; //regfile select (it can be interpeted as ALU_out select need to refactor)
-    assign PC_enable = _PC_enable; //regfile select
+    assign c_select = _c_select; 
+    assign PC_enable = _PC_enable; 
     assign wb = _wb;
     assign next_PC_select = _next_PC_select;
     assign IR_enable = _IR_enable;
