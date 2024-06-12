@@ -23,8 +23,17 @@ module cpu_top(
     //imm
     wire [31:0] imm;
     //REGFILE PC INSTREG(program register)
-    localparam c_register_file_len = 32; // rv32i has 31 general-purpose registers x1-x31, which hold integer values
-    bit [31:0] REG_FILE [c_register_file_len - 1 : 0];
+    //localparam c_register_file_len = 32; // rv32i has 31 general-purpose registers x1-x31, which hold integer values
+    //bit [31:0] REG_FILE [c_register_file_len - 1 : 0];
+    
+    //regfile
+    bit [31:0] regfile_in;
+    wire [31:0] regfile_out_a;
+    wire [31:0] regfile_out_b;
+    wire [4:0] regfile_address_a;
+    wire [4:0] regfile_address_b;
+    wire [4:0] regfile_address_in;
+    
     reg [31:0] PC = 32'd0;
     wire [31:0] PC_plus_4 = PC + 4;
     bit [31:0] INST_REG;	
@@ -76,6 +85,11 @@ module cpu_top(
 		  2'b10: next_PC <= reg_c; 
 		  default: next_PC <= PC_plus_4;	
 		endcase
+		
+		case (m2r_select)
+            1'b0: regfile_in <=  reg_c;
+            1'b1: regfile_in <= data_reg;
+       endcase
 	end
 
     //////////////////////////////////////////////////////	
@@ -84,13 +98,13 @@ module cpu_top(
 	always@(posedge aclk)begin
 	   if (aresetn)begin
 	       //prepare regfile reg_a and reg_b for operations when there is adress
-           reg_a <= (rs1==0) ? 0 : REG_FILE[rs1]; 
-           reg_b <= (rs2==0) ? 0 : REG_FILE[rs2];
+           reg_a <= (rs1==0) ? 0 : regfile_out_a; 
+           reg_b <= (rs2==0) ? 0 : regfile_out_b;
            //prepare data_reg when theres address
            data_reg <= data_in_data;            
              
             case (c_select)
-                2'b00: reg_c <= REG_FILE[rs1];
+                2'b00: reg_c <= regfile_out_a;
                 2'b01: reg_c <= ALU_out;
                 2'b10: reg_c <= PC;
                 2'b11: reg_c <= imm;		
@@ -101,10 +115,7 @@ module cpu_top(
                 1'b1: PC <= next_PC;
             endcase
        
-            case (wb)
-                1'b0: ;
-                1'b1: REG_FILE[rd] <= m2r_select ? data_reg : reg_c;
-            endcase
+            
             
             case (IR_enable)
                 1'b0: ;
@@ -126,11 +137,16 @@ module cpu_top(
     assign data_out_data = reg_b; // for store
     assign addr_data = memory_adress; //c is memory adress
     assign addr_inst = PC[31:2]; //use word adress to read memory
-	assign REG_FILE[0] = 32'h00; //register x0 is hardwired to the constant
 	assign we_data = _we_data;
 	
+	assign regfile_address_in = rd; 
+	assign regfile_address_a = rs1; 
+	assign regfile_address_b = rs2;
+	
+	
+	
 	//instantiations
-	 inst_decode my_inst( .INST_REG,
+	 inst_decode inst_decode_instance( .INST_REG,
      .rd, .rs1, .rs2,
      .imm, 
      .alu_operation,
@@ -139,5 +155,10 @@ module cpu_top(
      );
     
      alu alu_inst_0(.a_i(alu_a), .b_i(alu_b), .c_o(ALU_out), .alu_operation(alu_operation), .alu_flag(alu_flag));
+	
+	reg_file regfile_instance(.clk(aclk), .address_a(regfile_address_a), .address_b(regfile_address_b),
+                             .address_in(regfile_address_in), .regfile_in(regfile_in), .regfile_out_a(regfile_out_a),
+                             .regfile_out_b(regfile_out_b), .we(wb));
+	
 	
 endmodule

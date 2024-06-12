@@ -53,10 +53,10 @@ module bram_inst(
 //           data_i[7] <= 32'h006285b3;
 
 //jal test
-//            data_i[0] <= 32'h00300513;
-//            data_i[1] <= 32'h00400593;
-//            data_i[2] <= 32'h00a586b3;
-//            data_i[3] <= 32'hff9ff06f;
+            data_i[0] <= 32'h00300513;
+            data_i[1] <= 32'h00400593;
+            data_i[2] <= 32'h00a586b3;
+            data_i[3] <= 32'hff9ff06f;
             
 //        .global _start
 //_start:
