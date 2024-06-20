@@ -2,7 +2,7 @@
 //Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
 //--------------------------------------------------------------------------------
 //Tool Version: Vivado v.2023.2 (win64) Build 4029153 Fri Oct 13 20:14:34 MDT 2023
-//Date        : Thu Jun 20 17:37:38 2024
+//Date        : Thu Jun 20 20:02:28 2024
 //Host        : DESKTOP-EJ18JGA running 64-bit major release  (build 9200)
 //Command     : generate_target design_1.bd
 //Design      : design_1
@@ -31,12 +31,6 @@ module design_1
   (* X_INTERFACE_INFO = "xilinx.com:interface:uart:1.0 usb_uart RxD" *) input usb_uart_rxd;
   (* X_INTERFACE_INFO = "xilinx.com:interface:uart:1.0 usb_uart TxD" *) output usb_uart_txd;
 
-  wire S00_AXI_arvalid_1;
-  wire S00_AXI_awvalid_1;
-  wire [31:0]S00_AXI_rdata_1;
-  wire [31:0]S00_AXI_wdata_1;
-  wire [3:0]S00_AXI_wstrb_1;
-  wire S00_AXI_wvalid_1;
   wire [31:0]bram_inst_0_data_out_i;
   wire [31:0]bram_inst_0_data_out_m;
   wire clk_wiz_0_clk_out1;
@@ -45,18 +39,23 @@ module design_1
   wire [31:0]cpu_wrapper_0_addr_inst;
   wire [31:0]cpu_wrapper_0_data_out_data;
   wire [31:0]cpu_wrapper_0_data_out_inst;
-  wire cpu_wrapper_0_en_data;
-  wire [31:0]cpu_wrapper_0_m_axi_araddr;
-  wire [31:0]cpu_wrapper_0_m_axi_awaddr;
-  wire cpu_wrapper_0_m_axi_bready;
-  wire cpu_wrapper_0_m_axi_rready;
+  wire [31:0]cpu_wrapper_0_m_axi_ARADDR;
+  wire [0:0]cpu_wrapper_0_m_axi_ARREADY;
+  wire cpu_wrapper_0_m_axi_ARVALID;
+  wire [31:0]cpu_wrapper_0_m_axi_AWADDR;
+  wire [0:0]cpu_wrapper_0_m_axi_AWREADY;
+  wire cpu_wrapper_0_m_axi_AWVALID;
+  wire cpu_wrapper_0_m_axi_BREADY;
+  wire [1:0]cpu_wrapper_0_m_axi_BRESP;
+  wire [0:0]cpu_wrapper_0_m_axi_BVALID;
+  wire [31:0]cpu_wrapper_0_m_axi_RDATA;
+  wire cpu_wrapper_0_m_axi_RREADY;
+  wire [0:0]cpu_wrapper_0_m_axi_RVALID;
+  wire [31:0]cpu_wrapper_0_m_axi_WDATA;
+  wire [0:0]cpu_wrapper_0_m_axi_WREADY;
+  wire [3:0]cpu_wrapper_0_m_axi_WSTRB;
+  wire cpu_wrapper_0_m_axi_WVALID;
   wire [3:0]cpu_wrapper_0_we_data;
-  wire [0:0]peripheral_system_S00_AXI_arready;
-  wire [0:0]peripheral_system_S00_AXI_awready;
-  wire [1:0]peripheral_system_S00_AXI_bresp;
-  wire [0:0]peripheral_system_S00_AXI_bvalid;
-  wire [0:0]peripheral_system_S00_AXI_rvalid;
-  wire [0:0]peripheral_system_S00_AXI_wready;
   wire [15:0]peripheral_system_dip_switches_16bits_TRI_I;
   wire [15:0]peripheral_system_led_16bits_TRI_O;
   wire [3:0]peripheral_system_push_buttons_4bits_TRI_I;
@@ -86,7 +85,7 @@ module design_1
         .data_in_m(cpu_wrapper_0_data_out_data),
         .data_out_i(bram_inst_0_data_out_i),
         .data_out_m(bram_inst_0_data_out_m),
-        .ena(cpu_wrapper_0_en_data),
+        .ena(1'b0),
         .we_i({1'b0,1'b0,1'b0,1'b0}),
         .we_m(cpu_wrapper_0_we_data));
   design_1_clk_wiz_0_0 clk_wiz_0
@@ -103,42 +102,41 @@ module design_1
         .data_in_inst(bram_inst_0_data_out_i),
         .data_out_data(cpu_wrapper_0_data_out_data),
         .data_out_inst(cpu_wrapper_0_data_out_inst),
-        .en_data(cpu_wrapper_0_en_data),
-        .m_axi_araddr(cpu_wrapper_0_m_axi_araddr),
-        .m_axi_arready(peripheral_system_S00_AXI_arready),
-        .m_axi_arvalid(S00_AXI_arvalid_1),
-        .m_axi_awaddr(cpu_wrapper_0_m_axi_awaddr),
-        .m_axi_awready(peripheral_system_S00_AXI_awready),
-        .m_axi_awvalid(S00_AXI_awvalid_1),
-        .m_axi_bready(cpu_wrapper_0_m_axi_bready),
-        .m_axi_bresp(peripheral_system_S00_AXI_bresp[0]),
-        .m_axi_bvalid(peripheral_system_S00_AXI_bvalid),
-        .m_axi_rdata(S00_AXI_rdata_1),
-        .m_axi_rready(cpu_wrapper_0_m_axi_rready),
-        .m_axi_rvalid(peripheral_system_S00_AXI_rvalid),
-        .m_axi_wdata(S00_AXI_wdata_1),
-        .m_axi_wready(peripheral_system_S00_AXI_wready),
-        .m_axi_wstrb(S00_AXI_wstrb_1),
-        .m_axi_wvalid(S00_AXI_wvalid_1),
+        .m_axi_araddr(cpu_wrapper_0_m_axi_ARADDR),
+        .m_axi_arready(cpu_wrapper_0_m_axi_ARREADY),
+        .m_axi_arvalid(cpu_wrapper_0_m_axi_ARVALID),
+        .m_axi_awaddr(cpu_wrapper_0_m_axi_AWADDR),
+        .m_axi_awready(cpu_wrapper_0_m_axi_AWREADY),
+        .m_axi_awvalid(cpu_wrapper_0_m_axi_AWVALID),
+        .m_axi_bready(cpu_wrapper_0_m_axi_BREADY),
+        .m_axi_bresp(cpu_wrapper_0_m_axi_BRESP[0]),
+        .m_axi_bvalid(cpu_wrapper_0_m_axi_BVALID),
+        .m_axi_rdata(cpu_wrapper_0_m_axi_RDATA),
+        .m_axi_rready(cpu_wrapper_0_m_axi_RREADY),
+        .m_axi_rvalid(cpu_wrapper_0_m_axi_RVALID),
+        .m_axi_wdata(cpu_wrapper_0_m_axi_WDATA),
+        .m_axi_wready(cpu_wrapper_0_m_axi_WREADY),
+        .m_axi_wstrb(cpu_wrapper_0_m_axi_WSTRB),
+        .m_axi_wvalid(cpu_wrapper_0_m_axi_WVALID),
         .we_data(cpu_wrapper_0_we_data));
   peripheral_system_imp_KMOQRR peripheral_system
        (.S00_ACLK(clk_wiz_0_clk_out1),
-        .S00_AXI_araddr(cpu_wrapper_0_m_axi_araddr),
-        .S00_AXI_arready(peripheral_system_S00_AXI_arready),
-        .S00_AXI_arvalid(S00_AXI_arvalid_1),
-        .S00_AXI_awaddr(cpu_wrapper_0_m_axi_awaddr),
-        .S00_AXI_awready(peripheral_system_S00_AXI_awready),
-        .S00_AXI_awvalid(S00_AXI_awvalid_1),
-        .S00_AXI_bready(cpu_wrapper_0_m_axi_bready),
-        .S00_AXI_bresp(peripheral_system_S00_AXI_bresp),
-        .S00_AXI_bvalid(peripheral_system_S00_AXI_bvalid),
-        .S00_AXI_rdata(S00_AXI_rdata_1),
-        .S00_AXI_rready(cpu_wrapper_0_m_axi_rready),
-        .S00_AXI_rvalid(peripheral_system_S00_AXI_rvalid),
-        .S00_AXI_wdata(S00_AXI_wdata_1),
-        .S00_AXI_wready(peripheral_system_S00_AXI_wready),
-        .S00_AXI_wstrb(S00_AXI_wstrb_1),
-        .S00_AXI_wvalid(S00_AXI_wvalid_1),
+        .S00_AXI_araddr(cpu_wrapper_0_m_axi_ARADDR),
+        .S00_AXI_arready(cpu_wrapper_0_m_axi_ARREADY),
+        .S00_AXI_arvalid(cpu_wrapper_0_m_axi_ARVALID),
+        .S00_AXI_awaddr(cpu_wrapper_0_m_axi_AWADDR),
+        .S00_AXI_awready(cpu_wrapper_0_m_axi_AWREADY),
+        .S00_AXI_awvalid(cpu_wrapper_0_m_axi_AWVALID),
+        .S00_AXI_bready(cpu_wrapper_0_m_axi_BREADY),
+        .S00_AXI_bresp(cpu_wrapper_0_m_axi_BRESP),
+        .S00_AXI_bvalid(cpu_wrapper_0_m_axi_BVALID),
+        .S00_AXI_rdata(cpu_wrapper_0_m_axi_RDATA),
+        .S00_AXI_rready(cpu_wrapper_0_m_axi_RREADY),
+        .S00_AXI_rvalid(cpu_wrapper_0_m_axi_RVALID),
+        .S00_AXI_wdata(cpu_wrapper_0_m_axi_WDATA),
+        .S00_AXI_wready(cpu_wrapper_0_m_axi_WREADY),
+        .S00_AXI_wstrb(cpu_wrapper_0_m_axi_WSTRB),
+        .S00_AXI_wvalid(cpu_wrapper_0_m_axi_WVALID),
         .dip_switches_16bits_tri_i(peripheral_system_dip_switches_16bits_TRI_I),
         .led_16bits_tri_o(peripheral_system_led_16bits_TRI_O),
         .push_buttons_4bits_tri_i(peripheral_system_push_buttons_4bits_TRI_I),
@@ -1405,7 +1403,7 @@ module peripheral_system_imp_KMOQRR
   input [0:0]S00_AXI_bready;
   output [1:0]S00_AXI_bresp;
   output [0:0]S00_AXI_bvalid;
-  input [31:0]S00_AXI_rdata;
+  output [31:0]S00_AXI_rdata;
   input [0:0]S00_AXI_rready;
   output [0:0]S00_AXI_rvalid;
   input [31:0]S00_AXI_wdata;
@@ -1522,7 +1520,6 @@ module peripheral_system_imp_KMOQRR
   assign Conn4_AWADDR = S00_AXI_awaddr[31:0];
   assign Conn4_AWVALID = S00_AXI_awvalid[0];
   assign Conn4_BREADY = S00_AXI_bready[0];
-  assign Conn4_RDATA = S00_AXI_rdata[31:0];
   assign Conn4_RREADY = S00_AXI_rready[0];
   assign Conn4_WDATA = S00_AXI_wdata[31:0];
   assign Conn4_WSTRB = S00_AXI_wstrb[3:0];
@@ -1533,6 +1530,7 @@ module peripheral_system_imp_KMOQRR
   assign S00_AXI_awready[0] = Conn4_AWREADY;
   assign S00_AXI_bresp[1:0] = Conn4_BRESP;
   assign S00_AXI_bvalid[0] = Conn4_BVALID;
+  assign S00_AXI_rdata[31:0] = Conn4_RDATA;
   assign S00_AXI_rvalid[0] = Conn4_RVALID;
   assign S00_AXI_wready[0] = Conn4_WREADY;
   assign led_16bits_tri_o[15:0] = Conn1_TRI_O;

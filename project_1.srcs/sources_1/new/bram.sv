@@ -166,7 +166,7 @@ module bram_inst(
         //sw sb sh working
         
         //lw s1, 0x0(a3)
-        data_i[27] <= 32'h00082483;
+        data_i[27] <= 32'h00050483;
         //lw working
         
         data_i[28] <= 32'h00068403;
