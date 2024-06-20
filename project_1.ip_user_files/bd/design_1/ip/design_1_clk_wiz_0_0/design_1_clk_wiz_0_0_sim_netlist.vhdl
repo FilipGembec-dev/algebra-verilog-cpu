@@ -2,10 +2,10 @@
 -- Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
 -- --------------------------------------------------------------------------------
 -- Tool Version: Vivado v.2023.2 (win64) Build 4029153 Fri Oct 13 20:14:34 MDT 2023
--- Date        : Thu Jun 13 23:50:00 2024
--- Host        : DESKTOP-874KJD5 running 64-bit major release  (build 9200)
+-- Date        : Sat Jun 15 20:51:46 2024
+-- Host        : DESKTOP-EJ18JGA running 64-bit major release  (build 9200)
 -- Command     : write_vhdl -force -mode funcsim
---               c:/Users/Filip/Desktop/algebra_verilog_cpu/vivado/project_1/project_1.gen/sources_1/bd/design_1/ip/design_1_clk_wiz_0_0/design_1_clk_wiz_0_0_sim_netlist.vhdl
+--               c:/Users/Marin/Downloads/fili_cpu/algebra-verilog-cpu-main/project_1.gen/sources_1/bd/design_1/ip/design_1_clk_wiz_0_0/design_1_clk_wiz_0_0_sim_netlist.vhdl
 -- Design      : design_1_clk_wiz_0_0
 -- Purpose     : This VHDL netlist is a functional simulation representation of the design and should not be modified or
 --               synthesized. This netlist cannot be used for SDF annotated simulation.

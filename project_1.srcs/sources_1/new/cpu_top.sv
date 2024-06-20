@@ -38,11 +38,15 @@ module cpu_top#(
         output logic        m_axi_arvalid,
         input               m_axi_arready,
         //AXI data read data port
-        output logic [31:0] m_axi_rdata,
+        input logic [31:0] m_axi_rdata, //FILIP IT WAS OUTPUT changed to input
         input               m_axi_rvalid,
         output logic        m_axi_rready
     );
     
+    //r_enable for load
+     wire [3:0] r_enable;
+     //enable memory reg
+    wire ena;
     //source and destination
     wire [4:0] rd, rs1, rs2;   
     //imm
@@ -80,7 +84,10 @@ module cpu_top#(
 	wire [3:0] alu_operation; 
 	wire memory_adress_in_program_space;
 	wire [6:0] op_code;
-	wire [2:0] T;	
+	wire [2:0] T;
+	
+	
+	logic [31:0] axi_loaded_data = 32'd0; //jebiga tu je da se vivado ne žali 	
     ///////////////////////////////////////	
     //WIRE TO MULTIPLEXERS SELECT ACTIONS//
     //////////////////////////////////////
@@ -104,19 +111,22 @@ module cpu_top#(
 		  2'b10: next_PC <= reg_c; 
 		  default: next_PC <= PC_plus_4;	
 		endcase
+		
+		
 	end
 
     //////////////////////////////////////////////////////	
     //WIRES AND MULTIPLEXERS TO REGISTERS SELECT ACTIONS//
     /////////////////////////////////////////////////////
-    logic [31:0] axi_loaded_data = 32'd0; //jebiga tu je da se vivado ne žali 
+    
 	always@(posedge aclk)begin
 	   if (aresetn)begin
 	       //prepare regfile reg_a and reg_b for operations when there is adress
            reg_a <= (rs1==0) ? 0 : REG_FILE[rs1]; 
            reg_b <= (rs2==0) ? 0 : REG_FILE[rs2];
            //prepare data_reg when theres address
-           data_reg <= data_in_data;            
+           data_reg <= data_in_data;
+                     
              
             case (c_select)
                 2'b00: reg_c <= REG_FILE[rs1];
@@ -145,6 +155,22 @@ module cpu_top#(
               1'b1: current_PC <= PC;
             endcase
             
+            //axi lb lh doesnt work
+//            case(r_enable)
+//              4'b0001: begin data_reg <= {{24{1'b0}}, data_reg[7:0]}; axi_loaded_data <= {{24{1'b0}}, axi_loaded_data[7:0]}; end
+//              4'b0011:  begin data_reg <= {{16{1'b0}}, data_reg[15:0]}; axi_loaded_data <= {{24{1'b0}}, axi_loaded_data[7:0]}; end
+//              4'b1111:  begin data_reg <= data_in_data; axi_loaded_data <= m_axi_rdata; end
+//              default: begin data_reg <= data_in_data; axi_loaded_data <= m_axi_rdata; end
+//            endcase
+
+            case(r_enable)
+              4'b0001: begin data_reg <= {{24{1'b0}}, {data_in_data[7:0]}};end
+              4'b0011:  begin data_reg <= {{16{1'b0}}, {data_in_data[15:0]}};end
+              4'b1111:  begin data_reg <= data_in_data;end
+              default: begin data_reg <= data_in_data;end
+            endcase
+            
+            
 		end else begin
             PC <= 0;
             INST_REG <= 0;		  
@@ -157,6 +183,7 @@ module cpu_top#(
     assign addr_inst = PC[31:2]; //use word adress to read memory
 	assign REG_FILE[0] = 32'h00; //register x0 is hardwired to the constant
 	assign we_data = _we_data;
+	assign en_data = ena;
 	
 	initial begin
 	       m_axi_bready <= 1'b0;
@@ -261,7 +288,13 @@ module cpu_top#(
 	                   AXI_READ_STATE <= AXI_READ_STANDBY;
 	                   axi_read_done <= 1'b1; //signl to decoder that the axi read transaction is done
 	                   m_axi_rready <= 1'b0; //reset ready read data
-	                   axi_loaded_data <= m_axi_rdata; //load the data from the read port
+//	                   axi_loaded_data <= m_axi_rdata; //load the data from the read port
+	                   case(r_enable)         
+	                       4'b0001: begin axi_loaded_data <= {{24{1'b0}}, {m_axi_rdata[7:0]}};end
+                           4'b0011:  begin axi_loaded_data <= {{16{1'b0}}, {m_axi_rdata[15:0]}};end
+                           4'b1111:  begin data_reg <= m_axi_rdata;end
+                           default: begin data_reg <= m_axi_rdata;end
+	                   endcase
 	               end
 	           end
 	           default: begin
@@ -306,7 +339,9 @@ module cpu_top#(
      .aresetn,
      .memory_adress_in_program_space,
      .T,
-     .op_code
+     .op_code,
+     .r_enable,
+     .ena
      );
     
      alu alu_inst_0(.a_i(alu_a), .b_i(alu_b), .c_o(ALU_out), .alu_operation(alu_operation), .alu_flag(alu_flag));

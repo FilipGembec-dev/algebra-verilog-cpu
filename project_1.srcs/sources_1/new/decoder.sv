@@ -25,8 +25,14 @@ module inst_decode#(
     output [3:0] _we_data,
 	output memory_adress_in_program_space,
 	output logic [2:0] T,
-	output [6:0] op_code
+	output [6:0] op_code,
+	output [3:0] r_enable,
+	output ena
     );
+    //r enable for load
+    bit [3:0] _r_enable;
+    //enable for memory
+    bit _ena;
     //areset zero is low impendence
     bit areset;
   
@@ -95,7 +101,13 @@ module inst_decode#(
         case(_opcode)
             STORE: _imm <= {{20{INST_REG[31]}}, INST_REG[31:25], INST_REG[11:7]}; //S type store
             BRANCH: _imm <= {{20{INST_REG[31]}}, INST_REG[31:25], INST_REG[11:8], 1'b0}; //B type branch
-            IMM2REG: _imm <= {{20{INST_REG[31]}}, {INST_REG[31:20]}}; //I type (imm_alu_op or load or jalr)
+            IMM2REG:begin
+                _imm <= {{20{INST_REG[31]}}, {INST_REG[31:20]}}; //I type (imm_alu_op or load or jalr)
+                case(_funct3)
+                    32'b001: _imm <= {{27{1'b0}},{INST_REG[24:20]}};
+                    32'b101: _imm <= {{27{1'b0}},{INST_REG[24:20]}};
+                endcase
+            end    
             JALR: _imm <= {{20{INST_REG[31]}}, {INST_REG[31:20]}}; //I type (imm_alu_op or load or jalr)
             LOAD: _imm <= {{20{INST_REG[31]}}, {INST_REG[31:20]}}; //I type (imm_alu_op or load or jalr)
             LUI:  _imm <=  {{INST_REG[31:12]}, {12'b000000000000}}; //U type (LUI or AUI)
@@ -115,11 +127,11 @@ module inst_decode#(
             BRANCH:begin 
                  case (_funct3)
                      3'b000: _alu_operation <= (T == DECODE) ? 4'b0000 : 4'b1000; // equale (if state is decode select addition for calculating address)
-                     3'b001: _alu_operation <= 4'b1001; //not equale
-                     3'b100: _alu_operation <= 4'b0011; //less
-                     3'b101: _alu_operation <= 4'b1010; //greater
-                     3'b110: _alu_operation <= 4'b1011; //less then unsigned
-                     3'b111: _alu_operation <= 4'b1100; //greater then unsigned
+                     3'b001: _alu_operation <= (T == DECODE) ? 4'b0000 : 4'b1001; //not equale
+                     3'b100: _alu_operation <= (T == DECODE) ? 4'b0000 : 4'b0011; //less
+//                     3'b101: _alu_operation <= 4'b1010; //greater
+                     3'b110: _alu_operation <= (T == DECODE) ? 4'b0000 : 4'b1011; //less then unsigned
+//                     3'b111: _alu_operation <= 4'b1100; //greater then unsigned
                      default: _alu_operation <= 4'b0000;       
                  endcase
             end   
@@ -128,10 +140,10 @@ module inst_decode#(
                  case (_funct3)
                      3'b000: _alu_operation <= _funct7[5] ? 4'b0001 : 4'b0000; // add / sub
                      3'b001: _alu_operation <= 4'b0010; //shiftleft
-                     3'b010: _alu_operation <= 4'b0011; // lessthen
+                     3'b010: _alu_operation <= 4'b0011; // lessthen  signed
                      3'b011: _alu_operation <= 4'b1011;  //sltu
                      3'b100: _alu_operation <= 4'b0100; //xor
-                     3'b101: _alu_operation <= _funct7 ? 4'b0101 : 4'b0110; //srl / sra
+                     3'b101: _alu_operation <= _funct7[5] ? 4'b0101 : 4'b0110; //srl / sra
                      3'b110: _alu_operation <=  4'b0111;//or
                      3'b111: _alu_operation <=  4'b1000; //and 
                      default: _alu_operation <= 4'b0000;        
@@ -139,6 +151,12 @@ module inst_decode#(
             end
             default: _alu_operation <= 4'b0000; 
         endcase
+        
+        case(_funct3)
+            3'b000: _r_enable <= memory_adress_in_program_space ? 4'b0001 : 4'b0000;
+            3'b001: _r_enable <= memory_adress_in_program_space ? 4'b0011 : 4'b0000;    
+		    3'b010: _r_enable <= memory_adress_in_program_space ? 4'b1111 : 4'b0000;
+		endcase 
         //////////////////
         //SELECT SIGNALS//
         //////////////////
@@ -176,10 +194,12 @@ module inst_decode#(
         _wb <= 1'b0;
         _current_PC_enable <= 1'b0; 
         _m2r_select <= 1'b0;
-        we_data <= 4'b0000;  
+        we_data <= 4'b0000;
+        _ena <= 0;  
         
         case(T)
             FETCH:begin
+                 if(BRANCH)
                 _IR_enable <= 1'b1;
                 _PC_enable <= 1'b1; //select PC <= next_PC regtype
                 _next_PC_select <= 2'b00; // pc <= pc_plus_4
@@ -188,8 +208,8 @@ module inst_decode#(
             DECODE:begin
                 case(_opcode)
                     IMM2REG:_c_select <= 2'b11; //imm - c <= imm - signal 
-                    7'b0110111: _c_select <= 2'b11; //lui - c <= imm - signal;
-                    7'b0010111:begin 
+                    LUI: _c_select <= 2'b11; //lui - c <= imm - signal;
+                    AUIPC:begin 
                         _a_select <= 2'b10; //current_PC
                         _b_select <= 2'b01; //imm
                         _c_select <= 3'b01; //write to c       
@@ -215,7 +235,8 @@ module inst_decode#(
                         _wb <= 0;
                         _current_PC_enable <= 1'b0;
                         _IR_enable <= 1'b0;
-                        we_data <= 4'b0000;  
+                        we_data <= 4'b0000;
+                        _ena <= 1'b1;  
                     end    
                  endcase
             end         
@@ -241,13 +262,16 @@ module inst_decode#(
                         _a_select <= 2'b00; //qa
                         _b_select <= 2'b01; //imm
                         _c_select <= 2'b01;     
-                        _m2r_select <= 1'b0;                    
+                        _m2r_select <= 1'b0;
+                        _ena <= 1'b1;  
+                                            
                     end
                     STORE:begin  
                         _a_select <= 2'b00; //qa
                         _b_select <= 2'b01; //imm
                         _c_select <= 2'b01;
-                        _m2r_select <= 1'b0;    
+                        _m2r_select <= 1'b0;
+                        _ena <= 1'b1;    
                     end
                     JALR:begin  
                         _a_select <= 2'b00; //qa
@@ -272,10 +296,15 @@ module inst_decode#(
              MEMORY:begin                  
                case(_opcode)
                     STORE:begin//store_comb_logic #GEMB MAKNI ME#
-						we_data <= memory_adress_in_program_space ? 4'b1111 : 4'b0000;
+                        case(_funct3)
+                            3'b000: we_data <= memory_adress_in_program_space ? 4'b0001 : 4'b0000;
+                            3'b001: we_data <= memory_adress_in_program_space ? 4'b0011 : 4'b0000;    
+						    3'b010: we_data <= memory_adress_in_program_space ? 4'b1111 : 4'b0000;
+						endcase
+						_ena <= 1'b1;
                     end
                     LOAD:begin//load_comb_logic #GEMB MAKNI ME"
-                       
+                       _ena <= 1'b1;
                     end
                     default:begin
                         _a_select <= 2'b00; //qa
@@ -298,7 +327,8 @@ module inst_decode#(
                      _PC_enable <= 1'b0;
                      _current_PC_enable <= 1'b0; 
                  if (_opcode == LOAD)begin 
-                    _m2r_select <= 1'b1; 
+                    _m2r_select <= 1'b1;
+                    _ena <= 1'b1;
                  end else begin
                     _m2r_select <= 1'b0;
                  end   
@@ -318,7 +348,8 @@ module inst_decode#(
             FETCH: next_state <= DECODE;
             DECODE:begin
                 case(_opcode)
-                    IMM2REG:begin next_state <= (_rd == 5'b00000) ?  EXECUTE : WRITE_BACK; end 
+                    REG2REG: next_state <= EXECUTE;
+                    IMM2REG: begin next_state <= (_rs1 == 5'b00000) ?  WRITE_BACK : EXECUTE; end 
                     LUI: next_state <= WRITE_BACK;                     
                     AUIPC: next_state <= WRITE_BACK;                          
                     BRANCH:next_state <= EXECUTE;      
@@ -355,6 +386,11 @@ module inst_decode#(
 				case(_opcode)
                     LOAD:begin
                         next_state <= axi_read_done ? WRITE_BACK : AXI_WAIT;
+                        case(_funct3)
+                            3'b000: _r_enable <= 4'b0001;
+                            3'b001: _r_enable <= 4'b0011;    
+                            3'b010: _r_enable <= 4'b1111;
+                        endcase 
                     end  
                     STORE:begin
                         next_state <= axi_write_done ? FETCH : AXI_WAIT;
@@ -392,6 +428,7 @@ module inst_decode#(
     assign current_PC_enable = _current_PC_enable;
     assign m2r_select = _m2r_select;
     assign _we_data = we_data;
-    
+    assign r_enable = _r_enable;
+    assign ena = _ena;
     
 endmodule
