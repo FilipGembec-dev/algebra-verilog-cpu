@@ -57,7 +57,7 @@ module cpu_wrapper#(
         output        m_axi_arvalid,
         input         m_axi_arready,
         //AXI data read data port
-        output [31:0] m_axi_rdata,
+        input [31:0] m_axi_rdata,
         input         m_axi_rvalid,
         output        m_axi_rready
     
@@ -95,7 +95,7 @@ module cpu_wrapper#(
         m_axi_arvalid,
         m_axi_arready,
         //AXI data read data port
-        m_axi_rdata,
+//        m_axi_rdata,
         m_axi_rvalid,
         m_axi_rready        
     );
