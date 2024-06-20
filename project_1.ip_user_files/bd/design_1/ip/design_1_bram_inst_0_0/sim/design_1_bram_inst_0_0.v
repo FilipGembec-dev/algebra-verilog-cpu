@@ -60,6 +60,7 @@ module design_1_bram_inst_0_0 (
   data_in_i,
   addr_i,
   data_out_i,
+  ena,
   we_m,
   data_in_m,
   addr_m,
@@ -73,6 +74,7 @@ input wire [3 : 0] we_i;
 input wire [31 : 0] data_in_i;
 input wire [31 : 0] addr_i;
 output wire [31 : 0] data_out_i;
+input wire ena;
 input wire [3 : 0] we_m;
 input wire [31 : 0] data_in_m;
 input wire [31 : 0] addr_m;
@@ -84,6 +86,7 @@ output wire [31 : 0] data_out_m;
     .data_in_i(data_in_i),
     .addr_i(addr_i),
     .data_out_i(data_out_i),
+    .ena(ena),
     .we_m(we_m),
     .data_in_m(data_in_m),
     .addr_m(addr_m),
