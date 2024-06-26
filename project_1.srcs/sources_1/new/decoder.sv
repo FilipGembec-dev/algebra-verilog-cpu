@@ -27,8 +27,11 @@ module inst_decode#(
 	output logic [2:0] T,
 	output [6:0] op_code,
 	output [3:0] r_enable,
-	output ena
+	output ena,
+	output br_enable
     );
+    bit _br_enable;
+    assign br_enable = _br_enable;
     //r enable for load
     bit [3:0] _r_enable;
     //enable for memory
@@ -94,13 +97,15 @@ module inst_decode#(
    
     bit [31:0] _imm; //immideate selector
     
+    bit flag = 0;
+    
     always_comb begin
         ////////////////////////////////////////    
         //Immediate decode according to opcode//
         ///////////////////////////////////////
         case(_opcode)
             STORE: _imm <= {{20{INST_REG[31]}}, INST_REG[31:25], INST_REG[11:7]}; //S type store
-            BRANCH: _imm <= {{20{INST_REG[31]}}, INST_REG[31:25], INST_REG[11:8], 1'b0}; //B type branch
+            BRANCH: _imm <= {{20{INST_REG[31]}},INST_REG[7], INST_REG[30:25], INST_REG[11:8], 1'b0}; //B type branch
             IMM2REG:begin
                 _imm <= {{20{INST_REG[31]}}, {INST_REG[31:20]}}; //I type (imm_alu_op or load or jalr)
                 case(_funct3)
@@ -153,9 +158,9 @@ module inst_decode#(
         endcase
         
         case(_funct3)
-            3'b000: _r_enable <= memory_adress_in_program_space ? 4'b0001 : 4'b0000;
-            3'b001: _r_enable <= memory_adress_in_program_space ? 4'b0011 : 4'b0000;    
-		    3'b010: _r_enable <= memory_adress_in_program_space ? 4'b1111 : 4'b0000;
+            3'b000: _r_enable <= 4'b0001;
+            3'b001: _r_enable <= 4'b0011;    
+		    3'b010: _r_enable <= 4'b1111;
 		endcase 
         //////////////////
         //SELECT SIGNALS//
@@ -195,14 +200,14 @@ module inst_decode#(
         _current_PC_enable <= 1'b0; 
         _m2r_select <= 1'b0;
         we_data <= 4'b0000;
-        _ena <= 0;  
+        _ena <= 0;
+        _br_enable <= 0;  
         
         case(T)
             FETCH:begin
-                 if(BRANCH)
                 _IR_enable <= 1'b1;
                 _PC_enable <= 1'b1; //select PC <= next_PC regtype
-                _next_PC_select <= 2'b00; // pc <= pc_plus_4
+                _next_PC_select <= flag ? 2'b10 : 2'b00; // pc <= pc_plus_4
                 _current_PC_enable <= 1'b1; //on
             end
             DECODE:begin
@@ -215,14 +220,15 @@ module inst_decode#(
                         _c_select <= 3'b01; //write to c       
                     end
                     BRANCH:begin 
-                        _a_select <= 2'b01; //PC
+                        _a_select <= 2'b10; //current_PC 
                         _b_select <= 2'b01; //imm
-                        _c_select <= 2'b01; // save jump adress to registar c       
+                        _c_select <= 2'b00; // save jump adress to registar c    
+                        _br_enable <= 1'b01;  
                     end
                     JAL: begin 
-                       _a_select <= 2'b10; //current_PC
+                       _a_select <= 2'b10; //current_PC 
                        _b_select <= 2'b01; //imm
-                       _c_select <= 3'b010; // save PC to registar c
+                       _c_select <= 3'b10; // save PC to registar c
                        _next_PC_select <= 2'b01; //redirect alu_out to pc
                        _PC_enable <= 1'b1; 
                     end 
@@ -255,8 +261,11 @@ module inst_decode#(
                     BRANCH:begin 
                         _a_select <= 2'b00; //qa
                         _b_select <= 2'b00; //qb
-                        _next_PC_select <= 2'b10; //redirect c to pc
-                        _PC_enable <= alu_flag ? 1'b1 : 1'b0;       
+                        _c_select <= 2'b00; 
+                         _next_PC_select <= 2'b11;
+                        _PC_enable <= 1'b1; 
+                        _IR_enable <= 1'b0;
+                        _br_enable <= 0;
                     end
                     LOAD:begin 
                         _a_select <= 2'b00; //qa
@@ -276,7 +285,7 @@ module inst_decode#(
                     JALR:begin  
                         _a_select <= 2'b00; //qa
                         _b_select <= 2'b01; //imm
-                        _c_select <= 2'b10; //c <= PC (following pc)
+                        _c_select <= 2'b10; //c <= PC (following pc) --- bug
                         _next_PC_select <= 2'b01; //redirect alu_out to pc
                         _PC_enable <= 1'b1; // enable write to pc
                     end    
@@ -306,6 +315,9 @@ module inst_decode#(
                     LOAD:begin//load_comb_logic #GEMB MAKNI ME"
                        _ena <= 1'b1;
                     end
+                    BRANCH: begin _next_PC_select <= 2'b11;
+                        _PC_enable <= 1'b1; 
+                        _IR_enable <= 1'b0;   end
                     default:begin
                         _a_select <= 2'b00; //qa
                         _b_select <= 2'b10; //constant 4
@@ -325,7 +337,7 @@ module inst_decode#(
                      we_data <= 4'b0000;   
                      _wb <= 1'b1;
                      _PC_enable <= 1'b0;
-                     _current_PC_enable <= 1'b0; 
+                     _current_PC_enable <= 1'b0;
                  if (_opcode == LOAD)begin 
                     _m2r_select <= 1'b1;
                     _ena <= 1'b1;
@@ -356,7 +368,7 @@ module inst_decode#(
                     LOAD: next_state <= EXECUTE; 
                     STORE: next_state <= EXECUTE; 
                     JALR: next_state <= EXECUTE; 
-                    JAL: begin next_state <= (_rs1 == 5'b00000) ?  FETCH : WRITE_BACK; end //jal
+                    JAL: begin next_state <= (_rd == 5'b00000) ?  FETCH : WRITE_BACK; end //jal
                     default: next_state <= FETCH;    
                  endcase
             end         
@@ -364,7 +376,7 @@ module inst_decode#(
                 case(_opcode)
                     IMM2REG: next_state <= WRITE_BACK;  
                     REG2REG: next_state <= WRITE_BACK;                      
-                    BRANCH: next_state <= FETCH;                            
+                    BRANCH:begin next_state <= alu_flag ? MEMORY : FETCH; end                          
                     LOAD: next_state <= MEMORY; 
                     STORE: next_state <= MEMORY; 
                     JALR: next_state <= WRITE_BACK;
@@ -390,10 +402,17 @@ module inst_decode#(
                             3'b000: _r_enable <= 4'b0001;
                             3'b001: _r_enable <= 4'b0011;    
                             3'b010: _r_enable <= 4'b1111;
-                        endcase 
+                            3'b100: _r_enable <= 4'b1001;
+                            3'b101: _r_enable <= 4'b1011;
+                        endcase
                     end  
                     STORE:begin
                         next_state <= axi_write_done ? FETCH : AXI_WAIT;
+                        case(_funct3)
+                            3'b000: we_data <= 4'b0001;
+                            3'b001: we_data <= 4'b0011;    
+						    3'b010: we_data <= 4'b1111;
+						endcase
                     end
                     default: next_state <= FETCH;
                  endcase 
@@ -406,7 +425,13 @@ module inst_decode#(
     always@(posedge aclk)begin
         if (aresetn) T <= next_state;
         else T <= 0;
-    end                    
+    end
+    
+    always@(posedge aclk)begin
+        if (T == FETCH)begin
+            flag <= 0;
+        end else if (alu_flag == 1) flag <= 1;
+    end                         
     ///////////////////
     //NET ASSIGNMENTS//
     //////////////////
