@@ -1,4 +1,4 @@
-#RISC-V Design and FPGA Implementation
+# RISC-V Design and FPGA Implementation
 Welcome to the GitHub repository for the Algebra RISC-V cpu. This repository contains all the necessary files, documentation, and instructions to understand, build, and deploy a RISC-V processor on an Basys3 development board.
 
 ## Table of Contents
