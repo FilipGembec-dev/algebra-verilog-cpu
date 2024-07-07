@@ -22,7 +22,7 @@ Read userguide.
 
 ## Design Overview
 Design contains multicycle rv32i ISA core, single beat AXI interconnect for pheriprele, and block RAM. 
-Core consists of 3 modules: top_module, decode(CU), ALU (arithemtcl logical unit). It can be split in two categorys control(decode) and datapath(top and alu). Control representing control signals that are produced in FSM, and datapath computation that happens according to these control signals. This processor is designed for purpouse of simple demonstration, so some rv32i features are not implanted - FENCE, CSR, BGE (only less). Top_module also contains single beat AXI master interface, which is used for integration with Basys3 development board. 
+Core consists of 3 modules: top_module, decode(CU), ALU (arithemtcl logical unit). It can be split in two categorys control(decode) and datapath(top and alu). Control representing control signals that are produced in FSM, and datapath computation that happens according to these control signals. This processor is designed for purpouse of simple demonstration, so some rv32i features are not implanted - FENCE, CSR, store byte and halfword might not work as inteded. Top_module also contains single beat AXI master interface, which is used for integration with Basys3 development board.
 
 ## Simulation and Verification
 Core at least in this version has been tested with all instructions except pseudo instructions. Still needs further testing (using RISCV tools).
