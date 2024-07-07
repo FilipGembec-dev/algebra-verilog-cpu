@@ -28,6 +28,6 @@ Core consists of 3 modules: top_module, decode(CU), ALU (arithemtical logical un
 Tests and example programs can be found in project history - lut memory module.
 
 ## TODO
-Further testing using RISCV gnu tools, add missing instructions, branch optimization.
+Further testing using RISCV gnu tools, add missing instructions, error correction, memory hierarchy, control and status registers.
 
 
