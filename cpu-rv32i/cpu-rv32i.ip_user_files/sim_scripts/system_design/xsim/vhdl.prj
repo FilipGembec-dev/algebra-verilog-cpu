@@ -1,0 +1,8 @@
+vhdl xil_defaultlib  \
+"../../../bd/system_design/ip/system_design_axi_uartlite_0_0/sim/system_design_axi_uartlite_0_0.vhd" \
+"../../../bd/system_design/ip/system_design_rst_clk_wiz_100M_0/sim/system_design_rst_clk_wiz_100M_0.vhd" \
+"../../../bd/system_design/ip/system_design_axi_gpio_0_0/sim/system_design_axi_gpio_0_0.vhd" \
+"../../../bd/system_design/ip/system_design_axi_gpio_1_0/sim/system_design_axi_gpio_1_0.vhd" \
+
+# Do not sort compile order
+nosort

@@ -1,0 +1,16 @@
+verilog xil_defaultlib --include "../../../../cpu-rv32i.gen/sources_1/bd/system_design/ipshared/c2c6" --include "../../../../cpu-rv32i.gen/sources_1/bd/system_design/ipshared/ec67/hdl" \
+"../../../bd/system_design/ip/system_design_clk_wiz_0/system_design_clk_wiz_0_clk_wiz.v" \
+"../../../bd/system_design/ip/system_design_clk_wiz_0/system_design_clk_wiz_0.v" \
+"../../../bd/system_design/ip/system_design_blk_mem_gen_0_0/sim/system_design_blk_mem_gen_0_0.v" \
+"../../../bd/system_design/ip/system_design_cpu_wrapper_0_1/sim/system_design_cpu_wrapper_0_1.v" \
+"../../../bd/system_design/sim/system_design.v" \
+"../../../bd/system_design/ip/system_design_xbar_1/sim/system_design_xbar_1.v" \
+"../../../bd/system_design/ip/system_design_s00_regslice_0/sim/system_design_s00_regslice_0.v" \
+"../../../bd/system_design/ip/system_design_s00_data_fifo_0/sim/system_design_s00_data_fifo_0.v" \
+"../../../bd/system_design/ip/system_design_m02_data_fifo_0/sim/system_design_m02_data_fifo_0.v" \
+"../../../bd/system_design/ip/system_design_m02_regslice_0/sim/system_design_m02_regslice_0.v" \
+
+verilog xil_defaultlib "glbl.v"
+
+# Do not sort compile order
+nosort
