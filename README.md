@@ -18,7 +18,7 @@ Before you begin, ensure you have the following software installed:
 - Vivado design suite
 
 ## Getting started
-Read userguide.
+Read userguide. For quick test, program device with helloRISCV.bit bitstream.
 
 ## Design Overview
 Design contains multicycle rv32i ISA core, single beat AXI interconnect for pheriprele, and block RAM. 
